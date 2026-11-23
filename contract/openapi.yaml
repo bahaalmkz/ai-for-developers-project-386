@@ -5,6 +5,7 @@ info:
 tags:
   - name: Health
   - name: EventTypes
+  - name: Slots
 paths:
   /api/event-types:
     get:
@@ -63,6 +64,39 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CreateEventTypeRequest'
+  /api/event-types/{id}/slots:
+    get:
+      operationId: listSlots
+      description: Свободные слоты типа встречи на окно записи (14 дней), по возрастанию старта.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Slot'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - Slots
   /api/health:
     get:
       operationId: getHealth
@@ -141,6 +175,19 @@ components:
           type: string
           enum:
             - ok
+    Slot:
+      type: object
+      required:
+        - start
+        - end
+      properties:
+        start:
+          type: string
+          format: date-time
+        end:
+          type: string
+          format: date-time
+      description: 'Свободный слот: интервал времени в поясе владельца (+05:00).'
 servers:
   - url: http://localhost:8080
     description: Локальный сервер разработки
