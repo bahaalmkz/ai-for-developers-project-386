@@ -226,4 +226,24 @@ describe('Форма гостя', () => {
     expect(screen.queryByRole('button', { name: '09:00' })).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: '11:00' })).toBeInTheDocument()
   })
+
+  it('на время отправки блокирует смену типа, слота и повторную отправку', async () => {
+    let resolveBooking: (response: Response) => void = () => {}
+    const pending = new Promise<Response>((resolve) => {
+      resolveBooking = resolve
+    })
+    const fetchMock = stubApi(() => pending as unknown as Response)
+    const user = await openFormForSecondSlot()
+
+    await user.click(screen.getByRole('button', { name: 'Записаться' }))
+
+    expect(screen.getByRole('button', { name: 'Записаться' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Выбрать Знакомство' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: '09:00' })).toBeDisabled()
+    expect(bookingCalls(fetchMock)).toHaveLength(1)
+
+    resolveBooking(json({}, 500))
+    expect(await screen.findByRole('alert')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Выбрать Знакомство' })).toBeEnabled()
+  })
 })

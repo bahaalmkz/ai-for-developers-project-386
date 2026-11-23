@@ -401,7 +401,7 @@ class BookingsApiTest {
               () ->
                   book("intro-call", "2026-11-23T10:00:00+05:00", "Анна", "a@example.com")
                       .statusCode());
-      assertThatThrownBy(() -> pending.get(1500, TimeUnit.MILLISECONDS))
+      assertThatThrownBy(() -> pending.get(500, TimeUnit.MILLISECONDS))
           .as("запись должна ждать освобождения calendar_lock")
           .isInstanceOf(TimeoutException.class);
       assertThat(bookingCount()).isZero();

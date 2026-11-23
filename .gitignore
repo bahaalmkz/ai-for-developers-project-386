@@ -2,6 +2,8 @@
 node_modules/
 dist/
 backend/target/
+# Файл БД H2 (там email гостей): путь зависит от каталога запуска бэкенда
+data/
 frontend/src/api/generated/
 
 # IDE и система
