@@ -80,7 +80,7 @@ export function OwnerPage() {
     } catch (error) {
       if (error instanceof ResponseError) {
         const body = (await error.response.json().catch(() => null)) as ApiError | null
-        if (error.response.status === 400 && body?.fieldErrors) {
+        if (error.response.status === 400 && body?.fieldErrors && Object.keys(body.fieldErrors).length > 0) {
           setFieldErrors(body.fieldErrors)
           return
         }

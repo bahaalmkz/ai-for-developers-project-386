@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { bookingsApi, eventTypesApi, slotsApi } from '../api/client'
 import { ResponseError, type ApiError, type EventType, type Slot } from '../api/generated'
@@ -51,6 +51,7 @@ export function BookingPage() {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const [formError, setFormError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const latestSlotsRequest = useRef(0)
   // Сообщение о конфликте живёт рядом со слотами: форма после конфликта скрывается
   const [conflict, setConflict] = useState<string | null>(null)
 
@@ -65,10 +66,17 @@ export function BookingPage() {
   }
 
   function loadSlots(id: string) {
+    // Устаревшие ответы (после смены типа встречи) отбрасываем
+    const request = ++latestSlotsRequest.current
+    const isStale = () => request !== latestSlotsRequest.current
     return slotsApi
       .listSlots({ id })
-      .then((list) => setSlots({ status: 'ready', days: groupByDay(list) }))
-      .catch(() => setSlots({ status: 'error' }))
+      .then((list) => {
+        if (!isStale()) setSlots({ status: 'ready', days: groupByDay(list) })
+      })
+      .catch(() => {
+        if (!isStale()) setSlots({ status: 'error' })
+      })
   }
 
   function selectSlot(slot: Slot) {
@@ -97,7 +105,7 @@ export function BookingPage() {
     } catch (error) {
       if (error instanceof ResponseError) {
         const body = (await error.response.json().catch(() => null)) as ApiError | null
-        if (error.response.status === 400 && body?.fieldErrors) {
+        if (error.response.status === 400 && body?.fieldErrors && Object.keys(body.fieldErrors).length > 0) {
           setFieldErrors(body.fieldErrors)
           return
         }
