@@ -1,0 +1,40 @@
+[settings]
+experimental = true
+
+[tools]
+java = "temurin-21"
+node = "26.13.1"
+
+[tasks.contract]
+description = "Скомпилировать контракт TypeSpec в openapi.yaml"
+dir = "contract"
+run = "npm ci && npx tsp compile ."
+
+[tasks.generate]
+description = "Сгенерировать клиентский SDK фронтенда из OpenAPI"
+depends = ["contract"]
+dir = "frontend"
+run = "npm ci && npm run generate:api"
+
+[tasks.lint]
+description = "Линтеры: форматирование Java и oxlint для фронтенда"
+depends = ["generate"]
+run = [
+  "cd backend && ./mvnw -B -q spotless:check",
+  "cd frontend && npm run lint",
+]
+
+[tasks.typecheck]
+description = "Проверка типов фронтенда и сборка"
+depends = ["generate"]
+dir = "frontend"
+run = "npm run build"
+
+[tasks.test]
+description = "Тесты бэкенда (включая дымовой тест запуска)"
+dir = "backend"
+run = "./mvnw -B -q test"
+
+[tasks.check]
+description = "Все текущие проверки: локально и в GitHub Actions"
+depends = ["lint", "typecheck", "test"]

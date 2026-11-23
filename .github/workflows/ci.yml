@@ -1,0 +1,16 @@
+name: ci
+
+on:
+  push:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install mise and tools from mise.toml
+        uses: jdx/mise-action@v2
+
+      - name: Run checks
+        run: mise run check
