@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Архитектура
 
-Сервис бронирования времени (см. README.md: типы встреч, слоты, занятость). Пока есть только каркас: один эндпоинт `GET /api/health`.
+Сервис бронирования времени (см. README.md: типы встреч, слоты, занятость). API: `GET /api/health`, типы встреч (`/api/event-types`), слоты, записи (`/api/bookings`). Данные в встроенной H2 (`docs/adr/0004`), расписание фиксировано (`docs/adr/0003`).
 
 **Контракт — источник правды.** `contract/main.tsp` (TypeSpec) компилируется в `contract/openapi.yaml`. Оба файла коммитятся, и менять API нужно в TypeSpec, затем перекомпилировать.
 
@@ -16,7 +16,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Проверки — одна цепочка.** `mise run check` = контракт → генерация SDK → Spotless + oxlint (с `--deny-warnings`) + jactionlint для workflow-файлов → сборка фронтенда → тесты бэкенда. Та же команда вызывается из `.github/workflows/ci.yml` и из хука `pre-push` (hk, `hk.pkl`). Отдельно `scripts/check.ps1` повторяет эту цепочку без mise. Изменяя одно звено, проверяйте всю цепочку, потому что версии инструментов зафиксированы в `mise.toml`, а `scripts/check.ps1` — отдельная копия последовательности.
 
-**Тесты.** Единственный тест — `backend/src/test/.../SmokeTest`: поднимает сервер на случайном порту и делает реальный HTTP-запрос. Один тест: `cd backend && mvn -Dtest=SmokeTest test`. Тесты фронтенда — Vitest + Testing Library (`cd frontend && npm test`), решение в `docs/adr/0002`. Новые проверки сценариев добавляются в бэкенд-тесты рядом с кодом.
+**Тесты.** Бэкенд-тесты — API-тесты в `backend/src/test/.../*ApiTest` (реальный HTTP на случайном порту, чистая БД в памяти) и дымовой `SmokeTest`. Один тест: `cd backend && mvn -Dtest=SmokeTest test`. Тесты фронтенда — Vitest + Testing Library (`cd frontend && npm test`), решение в `docs/adr/0002`. Новые проверки сценариев добавляются в бэкенд-тесты рядом с кодом.
 
 **Браузерный сценарий.** `e2e/` (Playwright, отдельный `package.json`): один сценарий «владелец создаёт тип встречи, гость записывается, второй гость получает конфликт, встреча видна владельцу». `playwright.config.ts` через `webServer` поднимает настоящий бэкенд (`mvn spring-boot:run`, порт 18080, БД `jdbc:h2:mem`, без профиля `dev`) и Vite (порт 15173, адрес бэкенда в `API_PROXY_TARGET`, см. `frontend/vite.config.ts`). Звено `e2e` в `mise.toml` стоит последним в `check` и зависит от `generate`. В `scripts/check.ps1` Maven подменяется через `E2E_MVN=mvnw.cmd`, в CI перед проверками ставятся системные библиотеки Chromium (`ci.yml`).
 
