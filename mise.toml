@@ -3,7 +3,20 @@ experimental = true
 
 [tools]
 java = "temurin-21"
+maven = "3.10.1"
 node = "26.13.1"
+hk = "2.13.0"
+pitchfork = "2.36.0"
+
+# Фоновые процессы разработки: запуск, остановка и статус через pitchfork.
+# mvn и npm одинаково работают в Windows и Linux, поэтому без отдельных команд для ОС.
+[daemons.backend]
+run = "mvn spring-boot:run"
+dir = "backend"
+
+[daemons.frontend]
+run = "npm run dev"
+dir = "frontend"
 
 [tasks.contract]
 description = "Скомпилировать контракт TypeSpec в openapi.yaml"
@@ -20,7 +33,7 @@ run = "npm ci && npm run generate:api"
 description = "Линтеры: форматирование Java и oxlint для фронтенда"
 depends = ["generate"]
 run = [
-  "cd backend && ./mvnw -B -q spotless:check",
+  "cd backend && mvn -B -q spotless:check",
   "cd frontend && npm run lint",
 ]
 
@@ -33,7 +46,7 @@ run = "npm run build"
 [tasks.test]
 description = "Тесты бэкенда (включая дымовой тест запуска)"
 dir = "backend"
-run = "./mvnw -B -q test"
+run = "mvn -B -q test"
 
 [tasks.check]
 description = "Все текущие проверки: локально и в GitHub Actions"
