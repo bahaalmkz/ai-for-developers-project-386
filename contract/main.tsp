@@ -25,6 +25,12 @@ model EventType {
   durationMinutes: int32;
 }
 
+@doc("Свободный слот: интервал времени в поясе владельца (+05:00).")
+model Slot {
+  start: offsetDateTime;
+  end: offsetDateTime;
+}
+
 @doc("Единый формат ошибки.")
 model ApiError {
   code: string;
@@ -44,6 +50,19 @@ namespace Api {
   @tag("EventTypes")
   @operationId("listEventTypes")
   op listEventTypes(): EventType[] | {
+    @statusCode _: 500;
+    @body body: ApiError;
+  };
+
+  @get
+  @route("/event-types/{id}/slots")
+  @tag("Slots")
+  @operationId("listSlots")
+  @doc("Свободные слоты типа встречи на окно записи (14 дней), по возрастанию старта.")
+  op listSlots(@path id: string): Slot[] | {
+    @statusCode _: 404;
+    @body body: ApiError;
+  } | {
     @statusCode _: 500;
     @body body: ApiError;
   };
