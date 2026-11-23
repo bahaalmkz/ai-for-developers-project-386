@@ -53,6 +53,18 @@ run = [
   "cd frontend && npm test",
 ]
 
+[tasks.e2e]
+description = "Браузерный сценарий Playwright на настоящем бэкенде и чистой БД"
+depends = ["generate"]
+# Оба запускают Maven в backend/target: параллельно они мешают друг другу
+wait_for = ["test"]
+dir = "e2e"
+run = [
+  "npm ci",
+  "npx playwright install chromium",
+  "npx playwright test",
+]
+
 [tasks.check]
 description = "Все текущие проверки: локально и в GitHub Actions"
-depends = ["lint", "typecheck", "test"]
+depends = ["lint", "typecheck", "test", "e2e"]

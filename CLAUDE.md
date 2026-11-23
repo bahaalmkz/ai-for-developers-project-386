@@ -18,6 +18,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Тесты.** Единственный тест — `backend/src/test/.../SmokeTest`: поднимает сервер на случайном порту и делает реальный HTTP-запрос. Один тест: `cd backend && mvn -Dtest=SmokeTest test`. Тесты фронтенда — Vitest + Testing Library (`cd frontend && npm test`), решение в `docs/adr/0002`. Новые проверки сценариев добавляются в бэкенд-тесты рядом с кодом.
 
+**Браузерный сценарий.** `e2e/` (Playwright, отдельный `package.json`): один сценарий «владелец создаёт тип встречи, гость записывается, второй гость получает конфликт, встреча видна владельцу». `playwright.config.ts` через `webServer` поднимает настоящий бэкенд (`mvn spring-boot:run`, порт 18080, БД `jdbc:h2:mem`, без профиля `dev`) и Vite (порт 15173, адрес бэкенда в `API_PROXY_TARGET`, см. `frontend/vite.config.ts`). Звено `e2e` в `mise.toml` стоит последним в `check` и зависит от `generate`. В `scripts/check.ps1` Maven подменяется через `E2E_MVN=mvnw.cmd`, в CI перед проверками ставятся системные библиотеки Chromium (`ci.yml`).
+
 **Два способа запуска проверок.** `scripts/check.ps1` и `mise run check` повторяют одну и ту же последовательность, но `check.ps1` вызывает `./mvnw`, а mise — `mvn` из своего набора. Версии Maven держатся в `mise.toml` (3.10.1) и в `backend/.mvn/wrapper/maven-wrapper.properties`; при обновлении меняйте оба места.
 
 **Файлы, которые не трогаем вручную:** `.github/workflows/hexlet-check.yml` (его генерирует Хекслет), `frontend/src/api/generated`, `backend/target`, `contract/openapi.yaml` (только через `mise run contract`).
