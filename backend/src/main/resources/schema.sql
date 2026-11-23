@@ -13,3 +13,9 @@ CREATE TABLE IF NOT EXISTS bookings (
   guest_name VARCHAR(100) NOT NULL,
   guest_email VARCHAR(254) NOT NULL
 );
+
+-- Единственная строка-замок: сериализует проверку занятости и вставку встречи (BookingService)
+CREATE TABLE IF NOT EXISTS calendar_lock (
+  id INT PRIMARY KEY
+);
+MERGE INTO calendar_lock KEY (id) VALUES (1);
