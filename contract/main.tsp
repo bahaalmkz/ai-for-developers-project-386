@@ -71,7 +71,10 @@ model ApiError {
 model CreateEventTypeRequest {
   id: string;
   title: string;
-  description: string;
+
+  @doc("Необязательно: если не указано, сохраняется пустое описание.")
+  description?: string;
+
   durationMinutes: int32;
 }
 
