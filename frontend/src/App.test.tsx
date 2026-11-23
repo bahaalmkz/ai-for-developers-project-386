@@ -1,8 +1,20 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
+
+beforeEach(() => {
+  // Страница записи ходит в API: отдаём пустой список
+  vi.stubGlobal(
+    'fetch',
+    vi.fn().mockImplementation(async () => new Response('[]', { headers: { 'Content-Type': 'application/json' } })),
+  )
+})
+
+afterEach(() => {
+  vi.unstubAllGlobals()
+})
 
 function renderAt(path: string) {
   return render(
