@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "generate:api": "openapi-generator-cli generate -i ../contract/openapi.yaml -g typescript-fetch -o src/api/generated --additional-properties=typescriptThreePlus=true,supportsES6=true --skip-validate-spec",
-    "lint": "oxlint src",
+    "lint": "oxlint src --deny-warnings",
     "preview": "vite preview"
   },
   "dependencies": {

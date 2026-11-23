@@ -7,6 +7,7 @@ maven = "3.10.1"
 node = "26.13.1"
 hk = "2.13.0"
 pitchfork = "2.36.0"
+jactionlint = "2.6.0"
 
 # Фоновые процессы разработки: запуск, остановка и статус через pitchfork.
 # mvn и npm одинаково работают в Windows и Linux, поэтому без отдельных команд для ОС.
@@ -30,11 +31,12 @@ dir = "frontend"
 run = "npm ci && npm run generate:api"
 
 [tasks.lint]
-description = "Линтеры: форматирование Java и oxlint для фронтенда"
+description = "Линтеры: форматирование Java, oxlint для фронтенда и workflow-файлы GitHub Actions"
 depends = ["generate"]
 run = [
   "cd backend && mvn -B -q spotless:check",
   "cd frontend && npm run lint",
+  "jactionlint",
 ]
 
 [tasks.typecheck]
