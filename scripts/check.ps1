@@ -20,6 +20,7 @@ $steps = @(
     @{ Name = 'spotless';  Dir = 'backend';   Run = { ./mvnw -B -q spotless:check } },
     @{ Name = 'oxlint';    Dir = 'frontend';  Run = { npm run lint } },
     @{ Name = 'typecheck'; Dir = 'frontend';  Run = { npm run build } },
+    @{ Name = 'test-frontend'; Dir = 'frontend'; Run = { npm test } },
     @{ Name = 'test';      Dir = 'backend';   Run = { ./mvnw -B -q test } }
 )
 
