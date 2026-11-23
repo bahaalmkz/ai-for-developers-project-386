@@ -14,8 +14,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Фронтенд (`frontend/`, React + Vite).** Клиент API генерируется из того же `openapi.yaml` генератором `typescript-fetch` в `src/api/generated` (папка в `.gitignore`, ее создает `npm run generate:api`). Поэтому `mise run check` и хук pre-commit сначала вызывают генерацию. В dev-режиме Vite проксирует `/api` на `localhost:8080`, а клиент использует относительный `basePath: ''` — иначе запросы пошли бы мимо прокси.
 
-**Проверки — одна цепочка.** `mise run check` = контракт → генерация SDK → Spotless + oxlint → сборка фронтенда → тесты бэкенда. Та же команда вызывается из `.github/workflows/ci.yml` и из хука `pre-push` (hk, `hk.pkl`). Отдельно `scripts/check.ps1` повторяет эту цепочку без mise. Изменяя одно звено, проверяйте всю цепочку, потому что версии инструментов зафиксированы в `mise.toml`, а `scripts/check.ps1` — отдельная копия последовательности.
+**Проверки — одна цепочка.** `mise run check` = контракт → генерация SDK → Spotless + oxlint (с `--deny-warnings`) + jactionlint для workflow-файлов → сборка фронтенда → тесты бэкенда. Та же команда вызывается из `.github/workflows/ci.yml` и из хука `pre-push` (hk, `hk.pkl`). Отдельно `scripts/check.ps1` повторяет эту цепочку без mise. Изменяя одно звено, проверяйте всю цепочку, потому что версии инструментов зафиксированы в `mise.toml`, а `scripts/check.ps1` — отдельная копия последовательности.
 
-**Тесты.** Единственный тест — `backend/src/test/.../SmokeTest`: поднимает сервер на случайном порту и делает реальный HTTP-запрос. Новые проверки сценариев добавляются в бэкенд-тесты рядом с кодом.
+**Тесты.** Единственный тест — `backend/src/test/.../SmokeTest`: поднимает сервер на случайном порту и делает реальный HTTP-запрос. Один тест: `cd backend && mvn -Dtest=SmokeTest test`. Тестов фронтенда пока нет. Новые проверки сценариев добавляются в бэкенд-тесты рядом с кодом.
+
+**Два способа запуска проверок.** `scripts/check.ps1` и `mise run check` повторяют одну и ту же последовательность, но `check.ps1` вызывает `./mvnw`, а mise — `mvn` из своего набора. Версии Maven держатся в `mise.toml` (3.10.1) и в `backend/.mvn/wrapper/maven-wrapper.properties`; при обновлении меняйте оба места.
 
 **Файлы, которые не трогаем вручную:** `.github/workflows/hexlet-check.yml` (его генерирует Хекслет), `frontend/src/api/generated`, `backend/target`, `contract/openapi.yaml` (только через `mise run contract`).
