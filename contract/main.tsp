@@ -29,6 +29,17 @@ model EventType {
 model ApiError {
   code: string;
   message: string;
+
+  @doc("Для ошибок данных: поле → сообщение.")
+  fieldErrors?: Record<string>;
+}
+
+@doc("Данные для создания типа встречи.")
+model CreateEventTypeRequest {
+  id: string;
+  title: string;
+  description: string;
+  durationMinutes: int32;
 }
 
 @route("/api")
@@ -47,4 +58,26 @@ namespace Api {
     @statusCode _: 500;
     @body body: ApiError;
   };
+
+  @post
+  @route("/event-types")
+  @tag("EventTypes")
+  @operationId("createEventType")
+  op createEventType(@body body: CreateEventTypeRequest):
+    | {
+        @statusCode _: 201;
+        @body body: EventType;
+      }
+    | {
+        @statusCode _: 400;
+        @body body: ApiError;
+      }
+    | {
+        @statusCode _: 409;
+        @body body: ApiError;
+      }
+    | {
+        @statusCode _: 500;
+        @body body: ApiError;
+      };
 }

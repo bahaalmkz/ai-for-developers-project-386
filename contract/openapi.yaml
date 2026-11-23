@@ -27,6 +27,42 @@ paths:
                 $ref: '#/components/schemas/ApiError'
       tags:
         - EventTypes
+    post:
+      operationId: createEventType
+      parameters: []
+      responses:
+        '201':
+          description: The request has succeeded and a new resource has been created as a result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventType'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '409':
+          description: The request conflicts with the current state of the server.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - EventTypes
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateEventTypeRequest'
   /api/health:
     get:
       operationId: getHealth
@@ -52,7 +88,30 @@ components:
           type: string
         message:
           type: string
+        fieldErrors:
+          type: object
+          additionalProperties:
+            type: string
+          description: 'Для ошибок данных: поле → сообщение.'
       description: Единый формат ошибки.
+    CreateEventTypeRequest:
+      type: object
+      required:
+        - id
+        - title
+        - description
+        - durationMinutes
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        durationMinutes:
+          type: integer
+          format: int32
+      description: Данные для создания типа встречи.
     EventType:
       type: object
       required:
