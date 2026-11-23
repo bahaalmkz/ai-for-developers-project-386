@@ -4,3 +4,12 @@ CREATE TABLE IF NOT EXISTS event_types (
   description VARCHAR(500) NOT NULL DEFAULT '',
   duration_minutes INT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS bookings (
+  id VARCHAR(36) PRIMARY KEY,
+  event_type_id VARCHAR(100) NOT NULL REFERENCES event_types (id) ON DELETE CASCADE,
+  start_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  end_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  guest_name VARCHAR(100) NOT NULL,
+  guest_email VARCHAR(254) NOT NULL
+);
