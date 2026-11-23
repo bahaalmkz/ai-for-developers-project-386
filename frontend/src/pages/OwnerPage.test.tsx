@@ -121,6 +121,28 @@ describe('Раздел владельца: создание типа встре�
       'Тип встречи с id «intro» уже существует',
     )
   })
+
+  it('при 400 с пустым fieldErrors показывает общее сообщение', async () => {
+    stubApi([], () =>
+      json({ code: 'validation_error', message: 'Ошибка данных', fieldErrors: {} }, 400),
+    )
+    renderPage()
+    await screen.findByText('Типов встреч пока нет.')
+
+    await fillForm({ id: 'a', title: 'Название', duration: '30' })
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Ошибка данных')
+  })
+
+  it('при 400 без fieldErrors показывает общее сообщение', async () => {
+    stubApi([], () => json({ code: 'validation_error', message: 'Не удалось разобрать запрос' }, 400))
+    renderPage()
+    await screen.findByText('Типов встреч пока нет.')
+
+    await fillForm({ id: 'a', title: 'Название', duration: '30' })
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Не удалось разобрать запрос')
+  })
 })
 
 describe('Раздел владельца: предстоящие встречи', () => {

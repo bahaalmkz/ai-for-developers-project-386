@@ -170,4 +170,60 @@ describe('Форма гостя', () => {
     expect(slotRequests).toBe(2)
     expect(screen.queryByRole('heading', { name: 'Запись подтверждена' })).not.toBeInTheDocument()
   })
+
+  it('при 400 без fieldErrors показывает общее сообщение', async () => {
+    stubApi(() => json({ code: 'validation_error', message: 'Не удалось разобрать запрос' }, 400))
+    const user = await openFormForSecondSlot()
+
+    await user.click(screen.getByRole('button', { name: 'Записаться' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Не удалось разобрать запрос')
+  })
+
+  it('при 400 с пустым fieldErrors показывает общее сообщение', async () => {
+    stubApi(() =>
+      json({ code: 'validation_error', message: 'Ошибка данных', fieldErrors: {} }, 400),
+    )
+    const user = await openFormForSecondSlot()
+
+    await user.click(screen.getByRole('button', { name: 'Записаться' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Ошибка данных')
+  })
+
+  it('отбрасывает запоздалый ответ слотов прежнего типа встречи', async () => {
+    const types = [
+      { id: 'a', title: 'Первый', description: '', durationMinutes: 30 },
+      { id: 'b', title: 'Второй', description: '', durationMinutes: 30 },
+    ]
+    let resolveA: (response: Response) => void = () => {}
+    const slowA = new Promise<Response>((resolve) => {
+      resolveA = resolve
+    })
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        if (url === '/api/event-types') return json(types)
+        if (url === '/api/event-types/a/slots') return slowA
+        if (url === '/api/event-types/b/slots')
+          return json([{ start: '2026-11-23T11:00:00+05:00', end: '2026-11-23T11:30:00+05:00' }])
+        throw new Error(`Неожиданный запрос ${url}`)
+      }),
+    )
+    render(
+      <MemoryRouter initialEntries={['/book']}>
+        <App />
+      </MemoryRouter>,
+    )
+    const user = userEvent.setup()
+    await user.click(await screen.findByRole('button', { name: 'Выбрать Первый' }))
+    await user.click(screen.getByRole('button', { name: 'Выбрать Второй' }))
+    expect(await screen.findByRole('button', { name: '11:00' })).toBeInTheDocument()
+
+    resolveA(json([{ start: '2026-11-23T09:00:00+05:00', end: '2026-11-23T09:30:00+05:00' }]))
+    await new Promise((resolve) => setTimeout(resolve, 20))
+
+    expect(screen.queryByRole('button', { name: '09:00' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '11:00' })).toBeInTheDocument()
+  })
 })
