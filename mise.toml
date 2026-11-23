@@ -12,7 +12,7 @@ jactionlint = "2.6.0"
 # Фоновые процессы разработки: запуск, остановка и статус через pitchfork.
 # mvn и npm одинаково работают в Windows и Linux, поэтому без отдельных команд для ОС.
 [daemons.backend]
-run = "mvn spring-boot:run"
+run = "mvn spring-boot:run -Dspring-boot.run.profiles=dev"
 dir = "backend"
 
 [daemons.frontend]
