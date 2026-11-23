@@ -31,6 +31,33 @@ model Slot {
   end: offsetDateTime;
 }
 
+@doc("Ссылка на тип встречи внутри встречи: id и название.")
+model EventTypeRef {
+  id: string;
+  title: string;
+}
+
+@doc("Встреча: подтверждённая запись гостя на слот. Конец считает сервер.")
+model Booking {
+  id: string;
+  eventType: EventTypeRef;
+  start: offsetDateTime;
+  end: offsetDateTime;
+  guestName: string;
+  guestEmail: string;
+}
+
+@doc("Данные для записи гостя на слот.")
+model CreateBookingRequest {
+  eventTypeId: string;
+
+  @doc("Начало слота (ISO 8601 со смещением), на сетке 30 минут в окне записи.")
+  start: offsetDateTime;
+
+  guestName: string;
+  guestEmail: string;
+}
+
 @doc("Единый формат ошибки.")
 model ApiError {
   code: string;
@@ -99,4 +126,27 @@ namespace Api {
     @statusCode _: 500;
     @body body: ApiError;
   };
+
+  @post
+  @route("/bookings")
+  @tag("Bookings")
+  @operationId("createBooking")
+  @doc("Записать гостя на слот. Конец встречи считает сервер.")
+  op createBooking(@body body: CreateBookingRequest):
+    | {
+        @statusCode _: 201;
+        @body body: Booking;
+      }
+    | {
+        @statusCode _: 400;
+        @body body: ApiError;
+      }
+    | {
+        @statusCode _: 404;
+        @body body: ApiError;
+      }
+    | {
+        @statusCode _: 500;
+        @body body: ApiError;
+      };
 }

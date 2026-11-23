@@ -18,8 +18,16 @@ class SlotController implements SlotsApi {
   private final SlotCalculator calculator;
   private final SlotSchedule schedule;
 
-  SlotController(JdbcClient jdbc, Clock clock, SlotCalculator calculator, SlotSchedule schedule) {
+  private final BusyIntervals busy;
+
+  SlotController(
+      JdbcClient jdbc,
+      Clock clock,
+      SlotCalculator calculator,
+      SlotSchedule schedule,
+      BusyIntervals busy) {
     this.jdbc = jdbc;
+    this.busy = busy;
     this.clock = clock;
     this.calculator = calculator;
     this.schedule = schedule;
@@ -33,9 +41,8 @@ class SlotController implements SlotsApi {
             .query(Integer.class)
             .optional()
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
-    // Занятых интервалов пока нет: их даст бронирование (тикет про создание встречи)
     List<Slot> slots =
-        calculator.freeSlots(Duration.ofMinutes(minutes), clock.instant(), List.of()).stream()
+        calculator.freeSlots(Duration.ofMinutes(minutes), clock.instant(), busy.all()).stream()
             .map(
                 interval ->
                     new Slot()
