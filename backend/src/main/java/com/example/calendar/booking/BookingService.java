@@ -1,5 +1,6 @@
 package com.example.calendar.booking;
 
+import com.example.calendar.error.ConflictException;
 import com.example.calendar.model.Booking;
 import com.example.calendar.model.CreateBookingRequest;
 import com.example.calendar.model.EventTypeRef;
@@ -56,8 +57,16 @@ class BookingService {
   }
 
   /**
-   * Место для проверки пересечений с уже занятым временем (полуоткрытые интервалы, занятость общая
-   * для всех типов). Сейчас ничего не проверяет: транзакционную проверку и 409 добавляет тикет #19.
+   * Проверка пересечений с занятым временем (полуоткрытые интервалы, занятость общая для всех
+   * типов). Защита от гонки: сначала блокируем единственную строку calendar_lock (SELECT ... FOR
+   * UPDATE) на время транзакции, затем проверяем и вставляем. Второй запрос ждёт коммита первого и
+   * видит его встречу. Ограничение уникальности тут не подходит: пересечение интервалов им не
+   * выразить, а блокировка на уровне БД работает и при нескольких экземплярах сервера.
    */
-  private void ensureIntervalIsFree(Interval interval) {}
+  private void ensureIntervalIsFree(Interval interval) {
+    jdbc.sql("SELECT id FROM calendar_lock WHERE id = 1 FOR UPDATE").query().listOfRows();
+    if (bookings.all().stream().anyMatch(interval::overlaps)) {
+      throw new ConflictException("Это время уже занято, выберите другой слот");
+    }
+  }
 }
