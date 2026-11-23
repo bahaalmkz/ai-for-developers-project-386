@@ -24,3 +24,13 @@
 - Коммиты по Conventional Commits: `feat:`, `fix:`, `chore:`, `docs:`, `test:`, `refactor:` и т. д. Проверяет хук commit-msg (commitlint, правила в `commitlint.config.mjs`). После клонирования один раз `npm ci` в корне, иначе хук не найдёт commitlint.
 - Перед коммитом запускать `mise run check`.
 - Не править `.github/workflows/hexlet-check.yml`.
+
+## Скиллы и агентная среда
+
+Инженерные скиллы из `mattpocock/skills` установлены в `.claude/skills/` (агент Claude Code). Настройка под репозиторий записана в `docs/agents/`:
+
+- `docs/agents/issue-tracker.md` — трекер: GitHub Issues через `gh`.
+- `docs/agents/triage-labels.md` — метки разбора задач (значения по умолчанию).
+- `docs/agents/domain.md` — документы предметной области: один `GLOSSARY.md` и ADR в `docs/adr/` (single-context).
+
+Скиллы `/to-spec`, `/to-tickets`, `/implement-spec` и `/setup-matt-pocock-skills` помечены `disable-model-invocation`: агент их сам не запускает и в списке доступных не показывает. Их вызывает пользователь командой со слэшем в чате. Остальные скиллы (`domain-modeling`, `tdd`, `code-review`, `pr` и др.) агент может подобрать сам по описанию или по просьбе. Перед реализацией читайте спецификацию, связанные тикеты и их зависимости.
