@@ -21,7 +21,7 @@ hooks {
   ["commit-msg"] {
     steps {
       ["commitlint"] {
-        check = "npx --no-install commitlint --edit {{commit_msg_file}}"
+        check = "npx --no-install commitlint --edit \"{{commit_msg_file}}\""
       }
     }
   }

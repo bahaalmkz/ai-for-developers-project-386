@@ -12,7 +12,7 @@ jactionlint = "2.6.0"
 # Фоновые процессы разработки: запуск, остановка и статус через pitchfork.
 # mvn и npm одинаково работают в Windows и Linux, поэтому без отдельных команд для ОС.
 [daemons.backend]
-run = "mvn spring-boot:run"
+run = "mvn spring-boot:run -Dspring-boot.run.profiles=dev"
 dir = "backend"
 
 [daemons.frontend]
@@ -46,10 +46,25 @@ dir = "frontend"
 run = "npm run build"
 
 [tasks.test]
-description = "Тесты бэкенда (включая дымовой тест запуска)"
-dir = "backend"
-run = "mvn -B -q test"
+description = "Тесты бэкенда (включая дымовой тест запуска) и фронтенда"
+depends = ["generate"]
+run = [
+  "cd backend && mvn -B -q test",
+  "cd frontend && npm test",
+]
+
+[tasks.e2e]
+description = "Браузерный сценарий Playwright на настоящем бэкенде и чистой БД"
+depends = ["generate"]
+# Оба запускают Maven в backend/target: параллельно они мешают друг другу
+wait_for = ["test"]
+dir = "e2e"
+run = [
+  "npm ci",
+  "npx playwright install chromium",
+  "npx playwright test",
+]
 
 [tasks.check]
 description = "Все текущие проверки: локально и в GitHub Actions"
-depends = ["lint", "typecheck", "test"]
+depends = ["lint", "typecheck", "test", "e2e"]
