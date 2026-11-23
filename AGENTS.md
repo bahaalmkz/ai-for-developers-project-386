@@ -25,6 +25,14 @@
 - Перед коммитом запускать `mise run check`.
 - Не править `.github/workflows/hexlet-check.yml`.
 
+## Релизы
+
+- Релизы делает release-please (`.github/workflows/release-please.yml`, действие `googleapis/release-please-action` v5.0.0, закреплено по SHA). Конфигурация: `release-please-config.json`, текущая версия: `.release-please-manifest.json`.
+- На каждый push в `main` действие разбирает Conventional Commits с прошлого релиза и открывает (обновляет) PR «chore(main): release X.Y.Z» с новой версией и `CHANGELOG.md`. Слияние этого PR создаёт git-тег `vX.Y.Z` и GitHub Release. Версию и `CHANGELOG.md` руками не правим.
+- Правила версии: `fix:` — patch, `feat:` — minor, `feat!:` или `BREAKING CHANGE:` — major (пока версия 0.x, breaking даёт minor из-за `bump-minor-pre-major`). `docs:`, `chore:`, `test:` и т. п. версию не меняют.
+- Выбран один пакет на весь репозиторий (тип `simple`, тег без компонента), а не раздельные `backend` и `frontend`: это один продукт с общим контрактом, API и клиент меняются одним коммитом, раздельные версии только усложнили бы историю. Версии в `pom.xml` и `package.json` с релизом не синхронизируются.
+- Один раз в настройках репозитория: Settings → Actions → General → «Allow GitHub Actions to create and approve pull requests». С дефолтным `GITHUB_TOKEN` CI на PR релиза не запускается; при необходимости передать PAT в параметре `token`.
+
 ## Скиллы и агентная среда
 
 Инженерные скиллы из `mattpocock/skills` установлены в `.claude/skills/` (агент Claude Code). Настройка под репозиторий записана в `docs/agents/`:
