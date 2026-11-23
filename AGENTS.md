@@ -7,6 +7,7 @@
 - `mise run contract` — компиляция контракта `contract/main.tsp` в `contract/openapi.yaml`.
 - `mise run generate` — генерация клиента фронтенда из OpenAPI (`frontend/src/api/generated`).
 - `mise run lint`, `mise run test`, `mise run typecheck` — отдельные этапы.
+- Один тест бэкенда: `cd backend && mvn -Dtest=SmokeTest test`. Тестов фронтенда пока нет.
 - `mise daemons start|status|logs|stop` — backend (8080) и frontend (5173) в фоне через pitchfork.
 - Git-хуки (hk, `hk.pkl`): pre-commit запускает `mise run lint`, pre-push запускает `mise run check`.
 
