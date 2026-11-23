@@ -24,5 +24,10 @@ jobs:
       - name: Install mise and tools from mise.toml
         uses: jdx/mise-action@c37c93293d6b742fc901e1406b8f764f6fb19dac # v2
 
+      # Системные библиотеки для Chromium из браузерного сценария (сам браузер ставит mise run e2e)
+      - name: Install Playwright system dependencies
+        working-directory: e2e
+        run: npm ci && npx playwright install-deps chromium
+
       - name: Run checks
         run: mise run check

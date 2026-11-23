@@ -1,0 +1,70 @@
+import { expect, test, type Page } from '@playwright/test'
+
+const eventType = { id: 'e2e-call', title: 'Сценарий E2E', description: 'Проверка записи' }
+
+// Слоты берём на завтра (вторая группа дней): первый слот сегодняшнего дня может уйти в прошлое посреди теста
+function tomorrowSlots(page: Page) {
+  return page
+    .getByRole('region', { name: 'Свободные слоты' })
+    .getByRole('group')
+    .nth(1)
+    .getByRole('button')
+}
+
+async function chooseTomorrowFirstSlot(page: Page) {
+  await page.goto('/book')
+  await page.getByRole('button', { name: `Выбрать ${eventType.title}` }).click()
+  const firstSlot = tomorrowSlots(page).first()
+  await firstSlot.click()
+  return (await firstSlot.textContent())!.trim()
+}
+
+async function fillGuest(page: Page, name: string, email: string) {
+  const form = page.getByRole('form', { name: 'Данные гостя' })
+  await form.getByLabel('Имя').fill(name)
+  await form.getByLabel('Email').fill(email)
+  return form
+}
+
+test('владелец создаёт тип встречи, гость записывается, повторная запись даёт конфликт', async ({
+  page,
+  browser,
+}) => {
+  // Владелец создаёт тип встречи
+  await page.goto('/owner')
+  await page.getByLabel('Идентификатор').fill(eventType.id)
+  await page.getByLabel('Название').fill(eventType.title)
+  await page.getByLabel('Описание').fill(eventType.description)
+  await page.getByLabel('Длительность, мин').fill('30')
+  await page.getByRole('button', { name: 'Создать' }).click()
+  await expect(page.getByRole('list', { name: 'Типы встреч' })).toContainText(eventType.title)
+
+  // Второй гость открывает слоты заранее и держит выбранное время
+  const lateContext = await browser.newContext()
+  const latePage = await lateContext.newPage()
+  const slotTime = await chooseTomorrowFirstSlot(latePage)
+  const lateForm = await fillGuest(latePage, 'Опоздавший Гость', 'late@example.com')
+
+  // Первый гость записывается на то же время и видит подтверждение
+  expect(await chooseTomorrowFirstSlot(page)).toBe(slotTime)
+  const form = await fillGuest(page, 'Анна Гость', 'anna@example.com')
+  await form.getByRole('button', { name: 'Записаться' }).click()
+  await expect(page.getByRole('heading', { name: 'Запись подтверждена' })).toBeVisible()
+  await expect(page.getByText(eventType.title)).toBeVisible()
+  await expect(page.getByText(slotTime, { exact: false }).first()).toBeVisible()
+
+  // Встреча видна владельцу в списке предстоящих
+  await page.goto('/owner')
+  const upcoming = page.getByRole('list', { name: 'Предстоящие встречи' })
+  await expect(upcoming).toContainText(eventType.title)
+  await expect(upcoming).toContainText('Анна Гость')
+  await expect(upcoming).toContainText('anna@example.com')
+
+  // Второй гость пытается занять то же время и видит конфликт
+  await lateForm.getByRole('button', { name: 'Записаться' }).click()
+  await expect(latePage.getByRole('alert')).toHaveText('Это время уже занято, выберите другой слот')
+  // Список слотов обновился: занятое время больше не первое на завтра
+  await expect(tomorrowSlots(latePage).first()).not.toHaveText(slotTime)
+
+  await lateContext.close()
+})
