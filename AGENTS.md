@@ -12,6 +12,8 @@
 
 ## Устройство
 
+Как части связаны между собой (контракт → бэкенд и SDK фронтенда → проверки) — в CLAUDE.md.
+
 - `contract/` — TypeSpec-контракт. Источник правды для API. Меняем API здесь, затем `mise run contract`.
 - `backend/` — Java 21, Spring Boot. Серверные интерфейсы генерируются из `contract/openapi.yaml` при сборке. Реализуем их в контроллерах.
 - `frontend/` — React + Vite + TypeScript. Клиент API генерируется, руками не правим `src/api/generated`.
