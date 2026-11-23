@@ -9,6 +9,27 @@ tags:
   - name: Bookings
 paths:
   /api/bookings:
+    get:
+      operationId: listBookings
+      description: Предстоящие встречи всех типов (конец позже текущего момента), по возрастанию начала.
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Booking'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - Bookings
     post:
       operationId: createBooking
       description: Записать гостя на слот. Конец встречи считает сервер.

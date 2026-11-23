@@ -13,11 +13,12 @@ function json(body: unknown, status = 200) {
 
 type Handler = (init: RequestInit | undefined) => Response
 
-// Подменяем сеть: GET /api/event-types и POST /api/event-types
-function stubApi(initial: unknown[], onPost: Handler) {
+// Подменяем сеть: GET/POST /api/event-types и GET /api/bookings
+function stubApi(initial: unknown[], onPost: Handler, bookings: unknown[] = []) {
   const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
     if (url === '/api/event-types' && init?.method === 'POST') return onPost(init)
     if (url === '/api/event-types') return json(initial)
+    if (url === '/api/bookings') return json(bookings)
     throw new Error(`Неожиданный запрос ${url}`)
   })
   vi.stubGlobal('fetch', fetchMock)
@@ -119,5 +120,61 @@ describe('Раздел владельца: создание типа встре�
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'Тип встречи с id «intro» уже существует',
     )
+  })
+})
+
+describe('Раздел владельца: предстоящие встречи', () => {
+  const booking = (id: string, title: string, guest: string, start: string, end: string) => ({
+    id,
+    eventType: { id: 'x', title },
+    start,
+    end,
+    guestName: guest,
+    guestEmail: `${id}@example.com`,
+  })
+
+  it('показывает пустое состояние, когда встреч нет', async () => {
+    stubApi([], () => json({}, 500), [])
+
+    renderPage()
+
+    expect(await screen.findByText('Предстоящих встреч пока нет.')).toBeInTheDocument()
+    expect(screen.queryByRole('list', { name: 'Предстоящие встречи' })).not.toBeInTheDocument()
+  })
+
+  it('показывает встречи в порядке ответа: тип, время, имя и email гостя', async () => {
+    stubApi([], () => json({}, 500), [
+      booking('anna', 'Консультация', 'Анна', '2026-11-23T10:00:00+05:00', '2026-11-23T11:30:00+05:00'),
+      booking('boris', 'Знакомство', 'Борис', '2026-11-24T09:00:00+05:00', '2026-11-24T09:30:00+05:00'),
+    ])
+
+    renderPage()
+
+    const list = await screen.findByRole('list', { name: 'Предстоящие встречи' })
+    const items = within(list).getAllByRole('listitem')
+    expect(items).toHaveLength(2)
+    expect(items[0]).toHaveTextContent('Консультация')
+    expect(items[0]).toHaveTextContent('10:00')
+    expect(items[0]).toHaveTextContent('11:30')
+    expect(items[0]).toHaveTextContent('Анна')
+    expect(items[0]).toHaveTextContent('anna@example.com')
+    expect(items[1]).toHaveTextContent('Знакомство')
+    expect(items[1]).toHaveTextContent('Борис')
+  })
+
+  it('показывает ошибку, если встречи не загрузились', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        if (url === '/api/event-types') return json([])
+        return json({ code: 'internal_error', message: 'Ошибка' }, 500)
+      }),
+    )
+
+    renderPage()
+
+    expect(
+      await screen.findByText('Не удалось загрузить встречи. Попробуйте обновить страницу.'),
+    ).toBeInTheDocument()
   })
 })

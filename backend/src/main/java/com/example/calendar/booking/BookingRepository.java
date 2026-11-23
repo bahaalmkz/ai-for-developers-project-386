@@ -5,7 +5,9 @@ import com.example.calendar.model.EventTypeRef;
 import com.example.calendar.slot.BusyIntervals;
 import com.example.calendar.slot.Interval;
 import com.example.calendar.slot.SlotSchedule;
+import java.time.Instant;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.jdbc.core.simple.JdbcClient;
@@ -32,6 +34,32 @@ class BookingRepository implements BusyIntervals {
                     rs.getObject("start_at", OffsetDateTime.class).toInstant(),
                     rs.getObject("end_at", OffsetDateTime.class).toInstant()))
         .list();
+  }
+
+  /** Встречи, чей конец позже {@code now}, по возрастанию начала. */
+  List<Booking> upcoming(Instant now) {
+    return jdbc.sql(
+            "SELECT b.id, b.event_type_id, t.title, b.start_at, b.end_at, b.guest_name,"
+                + " b.guest_email FROM bookings b JOIN event_types t ON t.id = b.event_type_id"
+                + " WHERE b.end_at > :now ORDER BY b.start_at, b.id")
+        .param("now", now.atOffset(ZoneOffset.UTC))
+        .query(
+            (rs, rowNum) ->
+                new Booking()
+                    .id(rs.getString("id"))
+                    .eventType(
+                        new EventTypeRef()
+                            .id(rs.getString("event_type_id"))
+                            .title(rs.getString("title")))
+                    .start(inOwnerZone(rs.getObject("start_at", OffsetDateTime.class)))
+                    .end(inOwnerZone(rs.getObject("end_at", OffsetDateTime.class)))
+                    .guestName(rs.getString("guest_name"))
+                    .guestEmail(rs.getString("guest_email")))
+        .list();
+  }
+
+  private OffsetDateTime inOwnerZone(OffsetDateTime value) {
+    return value.toInstant().atZone(schedule.zone()).toOffsetDateTime();
   }
 
   Booking insert(EventTypeRef eventType, Interval interval, String guestName, String guestEmail) {
