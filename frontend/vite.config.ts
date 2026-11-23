@@ -1,5 +1,5 @@
 import react from '@vitejs/plugin-react'
-import { defineConfig } from 'vite'
+import { defineConfig } from 'vitest/config'
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -9,5 +9,11 @@ export default defineConfig({
       // Запросы к API в режиме разработки уходят на бэкенд Spring Boot
       '/api': 'http://localhost:8080',
     },
+  },
+  test: {
+    environment: 'jsdom',
+    setupFiles: ['./src/test-setup.ts'],
+    // Глобальные afterEach нужны Testing Library для автоочистки DOM между тестами
+    globals: true,
   },
 })

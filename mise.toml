@@ -46,9 +46,12 @@ dir = "frontend"
 run = "npm run build"
 
 [tasks.test]
-description = "Тесты бэкенда (включая дымовой тест запуска)"
-dir = "backend"
-run = "mvn -B -q test"
+description = "Тесты бэкенда (включая дымовой тест запуска) и фронтенда"
+depends = ["generate"]
+run = [
+  "cd backend && mvn -B -q test",
+  "cd frontend && npm test",
+]
 
 [tasks.check]
 description = "Все текущие проверки: локально и в GitHub Actions"
