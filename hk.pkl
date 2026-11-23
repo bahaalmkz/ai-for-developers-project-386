@@ -17,4 +17,12 @@ hooks {
       }
     }
   }
+  // Формат коммитов: Conventional Commits, правила в commitlint.config.mjs
+  ["commit-msg"] {
+    steps {
+      ["commitlint"] {
+        check = "npx --no-install commitlint --edit {{commit_msg_file}}"
+      }
+    }
+  }
 }
