@@ -156,6 +156,10 @@ namespace Api {
         @body body: ApiError;
       }
     | {
+        @statusCode _: 409;
+        @body body: ApiError;
+      }
+    | {
         @statusCode _: 500;
         @body body: ApiError;
       };

@@ -14,6 +14,10 @@ import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -267,5 +271,75 @@ class BookingsApiTest {
             "2026-11-23T10:00:00+05:00", "2026-11-23T10:30:00+05:00", "2026-11-23T11:00:00+05:00")
         .contains("2026-11-23T09:30:00+05:00", "2026-11-23T11:30:00+05:00");
     assertThat(slotStarts("consultation")).doesNotContain("2026-11-23T10:00:00+05:00");
+  }
+
+  private static final String CONFLICT_MESSAGE = "Это время уже занято, выберите другой слот";
+
+  private void assertConflict(HttpResponse<String> response) {
+    assertThat(response.statusCode()).isEqualTo(409);
+    assertThat(response.body())
+        .contains("\"code\":\"conflict\"")
+        .contains("\"message\":\"" + CONFLICT_MESSAGE + "\"");
+  }
+
+  @Test
+  void adjacentBookingsAreAllowedOnBothSides() throws IOException, InterruptedException {
+    // Занято [10:00, 11:30); встречи [09:30, 10:00) и [11:30, 12:00) только касаются границ
+    assertThat(
+            book("consultation", "2026-11-23T10:00:00+05:00", "Анна", "a@example.com").statusCode())
+        .isEqualTo(201);
+    assertThat(
+            book("intro-call", "2026-11-23T11:30:00+05:00", "Борис", "b@example.com").statusCode())
+        .isEqualTo(201);
+    assertThat(
+            book("intro-call", "2026-11-23T09:30:00+05:00", "Глеб", "g@example.com").statusCode())
+        .isEqualTo(201);
+    assertThat(bookingCount()).isEqualTo(3);
+  }
+
+  @Test
+  void partialOverlapGivesConflict() throws IOException, InterruptedException {
+    book("consultation", "2026-11-23T10:00:00+05:00", "Анна", "a@example.com");
+
+    // [11:00, 11:30) попадает в хвост [10:00, 11:30)
+    assertConflict(book("intro-call", "2026-11-23T11:00:00+05:00", "Борис", "b@example.com"));
+    // [09:00, 10:30) заходит в начало
+    assertConflict(book("consultation", "2026-11-23T09:00:00+05:00", "Вера", "v@example.com"));
+    assertThat(bookingCount()).isEqualTo(1);
+  }
+
+  @Test
+  void overlapWithBookingOfAnotherTypeGivesConflict() throws IOException, InterruptedException {
+    book("intro-call", "2026-11-23T10:00:00+05:00", "Анна", "a@example.com");
+
+    assertConflict(book("consultation", "2026-11-23T09:30:00+05:00", "Борис", "b@example.com"));
+    assertConflict(book("intro-call", "2026-11-23T10:00:00+05:00", "Вера", "v@example.com"));
+    assertThat(bookingCount()).isEqualTo(1);
+  }
+
+  @Test
+  void twoConcurrentRequestsForOverlappingTimeGiveOneCreatedAndOneConflict() throws Exception {
+    CyclicBarrier barrier = new CyclicBarrier(2);
+    ExecutorService pool = Executors.newFixedThreadPool(2);
+    try {
+      List<Future<Integer>> results = new ArrayList<>();
+      for (String type : List.of("intro-call", "consultation")) {
+        results.add(
+            pool.submit(
+                () -> {
+                  barrier.await();
+                  return book(type, "2026-11-23T10:00:00+05:00", "Гость", "g@example.com")
+                      .statusCode();
+                }));
+      }
+      List<Integer> codes = new ArrayList<>();
+      for (Future<Integer> f : results) {
+        codes.add(f.get());
+      }
+      assertThat(codes).containsExactlyInAnyOrder(201, 409);
+      assertThat(bookingCount()).isEqualTo(1);
+    } finally {
+      pool.shutdownNow();
+    }
   }
 }

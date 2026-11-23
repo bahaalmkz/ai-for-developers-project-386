@@ -139,4 +139,35 @@ describe('Форма гостя', () => {
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Not Found')
   })
+
+  it('при 409 показывает сообщение сервера и обновляет слоты без занятого', async () => {
+    let slotRequests = 0
+    const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
+      if (url === '/api/bookings' && init?.method === 'POST') {
+        return json({ code: 'conflict', message: 'Это время уже занято, выберите другой слот' }, 409)
+      }
+      if (url === '/api/event-types') return json(eventTypes)
+      if (url === '/api/event-types/intro-call/slots') {
+        slotRequests += 1
+        // после конфликта слот 09:30 уже занят
+        return json(slotRequests === 1 ? slots : slots.slice(0, 1))
+      }
+      throw new Error(`Неожиданный запрос ${url}`)
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    const user = await openFormForSecondSlot()
+
+    await user.click(screen.getByRole('button', { name: 'Записаться' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Это время уже занято, выберите другой слот',
+    )
+    const day = await screen.findByRole('group', { name: /23 ноября/ })
+    await vi.waitFor(() =>
+      expect(within(day).queryByRole('button', { name: '09:30' })).not.toBeInTheDocument(),
+    )
+    expect(within(day).getByRole('button', { name: '09:00' })).toBeInTheDocument()
+    expect(slotRequests).toBe(2)
+    expect(screen.queryByRole('heading', { name: 'Запись подтверждена' })).not.toBeInTheDocument()
+  })
 })

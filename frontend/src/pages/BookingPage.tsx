@@ -51,14 +51,21 @@ export function BookingPage() {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const [formError, setFormError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  // Сообщение о конфликте живёт рядом со слотами: форма после конфликта скрывается
+  const [conflict, setConflict] = useState<string | null>(null)
 
   function selectEventType(id: string) {
     setSelectedId(id)
     setSelectedSlot(null)
     setFieldErrors({})
     setFormError(null)
+    setConflict(null)
     setSlots({ status: 'loading' })
-    slotsApi
+    loadSlots(id)
+  }
+
+  function loadSlots(id: string) {
+    return slotsApi
       .listSlots({ id })
       .then((list) => setSlots({ status: 'ready', days: groupByDay(list) }))
       .catch(() => setSlots({ status: 'error' }))
@@ -68,6 +75,7 @@ export function BookingPage() {
     setSelectedSlot(slot)
     setFieldErrors({})
     setFormError(null)
+    setConflict(null)
   }
 
   async function submit(event: FormEvent) {
@@ -91,6 +99,13 @@ export function BookingPage() {
         const body = (await error.response.json().catch(() => null)) as ApiError | null
         if (error.response.status === 400 && body?.fieldErrors) {
           setFieldErrors(body.fieldErrors)
+          return
+        }
+        if (error.response.status === 409) {
+          // Слот уже занят: сообщаем и обновляем список, выбранный слот сбрасываем
+          setConflict(body?.message ?? 'Это время уже занято, выберите другой слот')
+          setSelectedSlot(null)
+          await loadSlots(selectedId)
           return
         }
         setFormError(body?.message ?? 'Не удалось записаться')
@@ -173,6 +188,7 @@ export function BookingPage() {
         <section aria-label="Свободные слоты">
           <h2>Свободное время</h2>
           <p>Время указано в часовом поясе владельца: {OWNER_TIMEZONE} (UTC+5).</p>
+          {conflict && <p role="alert">{conflict}</p>}
           {slots.status === 'loading' && <p>Загрузка слотов…</p>}
           {slots.status === 'error' && (
             <p role="alert">Не удалось загрузить слоты. Попробуйте ещё раз.</p>
