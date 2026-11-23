@@ -16,6 +16,22 @@ class ApiExceptionHandler {
 
   private static final Logger log = LoggerFactory.getLogger(ApiExceptionHandler.class);
 
+  @ExceptionHandler(ValidationException.class)
+  ResponseEntity<ApiError> handleValidation(ValidationException e) {
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+        .body(
+            new ApiError()
+                .code("validation_error")
+                .message(e.getMessage())
+                .fieldErrors(e.fieldErrors()));
+  }
+
+  @ExceptionHandler(ConflictException.class)
+  ResponseEntity<ApiError> handleConflict(ConflictException e) {
+    return ResponseEntity.status(HttpStatus.CONFLICT)
+        .body(new ApiError().code("conflict").message(e.getMessage()));
+  }
+
   @ExceptionHandler(Exception.class)
   ResponseEntity<ApiError> handle(Exception e) {
     // Ошибки самого Spring MVC (404, 405, 400 и т. п.) сохраняют свой статус
