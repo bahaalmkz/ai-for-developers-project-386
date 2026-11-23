@@ -1,0 +1,12 @@
+# Зависимости и сборка
+node_modules/
+dist/
+backend/target/
+frontend/src/api/generated/
+
+# IDE и система
+.idea/
+*.iml
+.vscode/
+.DS_Store
+Thumbs.db
