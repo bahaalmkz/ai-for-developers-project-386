@@ -127,6 +127,16 @@ namespace Api {
     @body body: ApiError;
   };
 
+  @get
+  @route("/bookings")
+  @tag("Bookings")
+  @operationId("listBookings")
+  @doc("Предстоящие встречи всех типов (конец позже текущего момента), по возрастанию начала.")
+  op listBookings(): Booking[] | {
+    @statusCode _: 500;
+    @body body: ApiError;
+  };
+
   @post
   @route("/bookings")
   @tag("Bookings")
