@@ -2,13 +2,19 @@ import { expect, test, type Page } from '@playwright/test'
 
 const eventType = { id: 'e2e-call', title: 'Сценарий E2E', description: 'Проверка записи' }
 
-async function chooseFirstSlot(page: Page) {
+// Слоты берём на завтра (вторая группа дней): первый слот сегодняшнего дня может уйти в прошлое посреди теста
+function tomorrowSlots(page: Page) {
+  return page
+    .getByRole('region', { name: 'Свободные слоты' })
+    .getByRole('group')
+    .nth(1)
+    .getByRole('button')
+}
+
+async function chooseTomorrowFirstSlot(page: Page) {
   await page.goto('/book')
   await page.getByRole('button', { name: `Выбрать ${eventType.title}` }).click()
-  const firstSlot = page
-    .getByRole('region', { name: 'Свободные слоты' })
-    .getByRole('button')
-    .first()
+  const firstSlot = tomorrowSlots(page).first()
   await firstSlot.click()
   return (await firstSlot.textContent())!.trim()
 }
@@ -36,11 +42,11 @@ test('владелец создаёт тип встречи, гость запи
   // Второй гость открывает слоты заранее и держит выбранное время
   const lateContext = await browser.newContext()
   const latePage = await lateContext.newPage()
-  const slotTime = await chooseFirstSlot(latePage)
+  const slotTime = await chooseTomorrowFirstSlot(latePage)
   const lateForm = await fillGuest(latePage, 'Опоздавший Гость', 'late@example.com')
 
   // Первый гость записывается на то же время и видит подтверждение
-  expect(await chooseFirstSlot(page)).toBe(slotTime)
+  expect(await chooseTomorrowFirstSlot(page)).toBe(slotTime)
   const form = await fillGuest(page, 'Анна Гость', 'anna@example.com')
   await form.getByRole('button', { name: 'Записаться' }).click()
   await expect(page.getByRole('heading', { name: 'Запись подтверждена' })).toBeVisible()
@@ -57,10 +63,8 @@ test('владелец создаёт тип встречи, гость запи
   // Второй гость пытается занять то же время и видит конфликт
   await lateForm.getByRole('button', { name: 'Записаться' }).click()
   await expect(latePage.getByRole('alert')).toHaveText('Это время уже занято, выберите другой слот')
-  // Список слотов обновился: занятое время больше не первое
-  await expect(
-    latePage.getByRole('region', { name: 'Свободные слоты' }).getByRole('button').first(),
-  ).not.toHaveText(slotTime)
+  // Список слотов обновился: занятое время больше не первое на завтра
+  await expect(tomorrowSlots(latePage).first()).not.toHaveText(slotTime)
 
   await lateContext.close()
 })

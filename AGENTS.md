@@ -2,7 +2,7 @@
 
 ## Команды
 
-- `mise run check` — все проверки (линтеры, сборка фронтенда, тесты). Это же вызывает GitHub Actions.
+- `mise run check` — все проверки (линтеры, сборка фронтенда, тесты бэкенда и фронтенда, браузерный сценарий Playwright). Это же вызывает GitHub Actions.
 - `powershell -ExecutionPolicy Bypass -File scripts\check.ps1` — то же самое без mise (Windows, если mise заблокирован). Версии в этом случае берутся из установленных Node и JDK.
 - `mise run contract` — компиляция контракта `contract/main.tsp` в `contract/openapi.yaml`.
 - `mise run generate` — генерация клиента фронтенда из OpenAPI (`frontend/src/api/generated`).

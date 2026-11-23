@@ -184,6 +184,7 @@ export function BookingPage() {
                 type="button"
                 aria-pressed={selectedId === eventType.id}
                 aria-label={`Выбрать ${eventType.title}`}
+                disabled={submitting}
                 onClick={() => selectEventType(eventType.id)}
               >
                 Выбрать
@@ -194,7 +195,7 @@ export function BookingPage() {
       )}
       {slots.status !== 'idle' && (
         <section aria-label="Свободные слоты">
-          <h2>Свободное время</h2>
+          <h2>Свободные слоты</h2>
           <p>Время указано в часовом поясе владельца: {OWNER_TIMEZONE} (UTC+5).</p>
           {conflict && <p role="alert">{conflict}</p>}
           {slots.status === 'loading' && <p>Загрузка слотов…</p>}
@@ -212,6 +213,7 @@ export function BookingPage() {
                       <button
                         type="button"
                         aria-pressed={selectedSlot?.start.getTime() === slot.start.getTime()}
+                        disabled={submitting}
                         onClick={() => selectSlot(slot)}
                       >
                         {timeFormat.format(slot.start)}
