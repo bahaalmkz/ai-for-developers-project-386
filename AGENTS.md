@@ -21,6 +21,6 @@
 
 ## Правила
 
-- Коммиты по Conventional Commits: `feat:`, `fix:`, `chore:`, `docs:`, `test:`, `refactor:` и т. д.
+- Коммиты по Conventional Commits: `feat:`, `fix:`, `chore:`, `docs:`, `test:`, `refactor:` и т. д. Проверяет хук commit-msg (commitlint, правила в `commitlint.config.mjs`). После клонирования один раз `npm ci` в корне, иначе хук не найдёт commitlint.
 - Перед коммитом запускать `mise run check`.
 - Не править `.github/workflows/hexlet-check.yml`.
