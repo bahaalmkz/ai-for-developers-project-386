@@ -7,7 +7,8 @@ export default defineConfig({
   server: {
     proxy: {
       // Запросы к API в режиме разработки уходят на бэкенд Spring Boot
-      '/api': 'http://localhost:8080',
+      // Адрес можно подменить (браузерный сценарий поднимает бэкенд на другом порту)
+      '/api': process.env.API_PROXY_TARGET ?? 'http://localhost:8080',
     },
   },
   test: {

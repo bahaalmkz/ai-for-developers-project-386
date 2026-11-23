@@ -1,5 +1,5 @@
 ﻿# Локальный запуск всех проверок без mise. Повторяет задачи из mise.toml:
-# contract -> generate -> lint -> typecheck -> test.
+# contract -> generate -> lint -> typecheck -> test -> e2e.
 # Нужны установленные: Node.js (LTS), JDK 21 (JAVA_HOME или java в PATH).
 # Запуск из корня репозитория: powershell -ExecutionPolicy Bypass -File scripts\check.ps1
 
@@ -21,7 +21,9 @@ $steps = @(
     @{ Name = 'oxlint';    Dir = 'frontend';  Run = { npm run lint } },
     @{ Name = 'typecheck'; Dir = 'frontend';  Run = { npm run build } },
     @{ Name = 'test-frontend'; Dir = 'frontend'; Run = { npm test } },
-    @{ Name = 'test';      Dir = 'backend';   Run = { ./mvnw -B -q test } }
+    @{ Name = 'test';      Dir = 'backend';   Run = { ./mvnw -B -q test } },
+    # Playwright сам поднимает бэкенд (из каталога backend запускается mvnw.cmd) и фронтенд
+    @{ Name = 'e2e';       Dir = 'e2e';       Run = { $env:E2E_MVN = '.\mvnw.cmd'; npm ci --silent; npx playwright install chromium; npx playwright test } }
 )
 
 foreach ($step in $steps) {

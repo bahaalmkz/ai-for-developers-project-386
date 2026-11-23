@@ -8,6 +8,7 @@
 - `mise run generate` — генерация клиента фронтенда из OpenAPI (`frontend/src/api/generated`).
 - `mise run lint`, `mise run test`, `mise run typecheck` — отдельные этапы.
 - Один тест бэкенда: `cd backend && mvn -Dtest=SmokeTest test`. Тесты фронтенда: `cd frontend && npm test` (Vitest).
+- `mise run e2e` — браузерный сценарий Playwright (`e2e/`, версия закреплена в `e2e/package.json`). Сам поднимает бэкенд на порту 18080 (чистая БД в памяти, без профиля dev) и фронтенд на 15173, поэтому демоны для него не нужны. Хромиум ставится автоматически. Входит в `mise run check`, `scripts/check.ps1` и CI.
 - `mise daemons start|status|logs|stop` — backend (8080) и frontend (5173) в фоне через pitchfork.
 - Git-хуки (hk, `hk.pkl`): pre-commit запускает `mise run lint`, pre-push запускает `mise run check`.
 
