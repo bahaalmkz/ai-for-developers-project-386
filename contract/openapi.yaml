@@ -4,7 +4,29 @@ info:
   version: 0.0.0
 tags:
   - name: Health
+  - name: EventTypes
 paths:
+  /api/event-types:
+    get:
+      operationId: listEventTypes
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EventType'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - EventTypes
   /api/health:
     get:
       operationId: getHealth
@@ -20,6 +42,37 @@ paths:
         - Health
 components:
   schemas:
+    ApiError:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+      description: Единый формат ошибки.
+    EventType:
+      type: object
+      required:
+        - id
+        - title
+        - description
+        - durationMinutes
+      properties:
+        id:
+          type: string
+          description: 'Идентификатор: латиница в нижнем регистре, цифры, дефис.'
+        title:
+          type: string
+        description:
+          type: string
+        durationMinutes:
+          type: integer
+          format: int32
+          description: Длительность в минутах, кратна 30, от 30 до 480.
+      description: 'Тип встречи: предложение владельца.'
     HealthStatus:
       type: object
       required:
