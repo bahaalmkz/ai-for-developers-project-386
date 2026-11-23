@@ -18,7 +18,7 @@ import java.util.regex.Pattern;
  */
 final class BookingValidator {
 
-  private static final Pattern EMAIL = Pattern.compile("[^@\\s]+@[^@\\s]+\\.[^@\\s]+");
+  private static final Pattern EMAIL = Pattern.compile("[^@\\s]+@[^@\\s.]+(\\.[^@\\s.]+)+");
 
   private final SlotSchedule schedule;
 

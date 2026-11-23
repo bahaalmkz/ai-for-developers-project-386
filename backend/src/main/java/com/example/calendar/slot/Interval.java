@@ -3,8 +3,8 @@ package com.example.calendar.slot;
 import java.time.Instant;
 
 /**
- * Полуоткрытый интервал времени [start, end). Общая модель занятости: встречи станут такими же
- * интервалами.
+ * Полуоткрытый интервал времени [start, end). Общая модель занятости: встречи представлены такими
+ * же интервалами; примыкающие интервалы не пересекаются.
  */
 public record Interval(Instant start, Instant end) {
 

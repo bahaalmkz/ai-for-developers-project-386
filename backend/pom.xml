@@ -102,6 +102,8 @@
 								<useTags>true</useTags>
 								<skipDefaultInterface>true</skipDefaultInterface>
 								<openApiNullable>false</openApiNullable>
+								<containerDefaultToNull>true</containerDefaultToNull>
+								<additionalModelTypeAnnotations>@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)</additionalModelTypeAnnotations>
 							</configOptions>
 						</configuration>
 					</execution>
