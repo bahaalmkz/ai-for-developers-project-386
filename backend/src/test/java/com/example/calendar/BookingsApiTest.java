@@ -1,12 +1,15 @@
 package com.example.calendar;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.sql.Connection;
+import java.sql.Statement;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -18,6 +21,8 @@ import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -337,6 +342,71 @@ class BookingsApiTest {
         codes.add(f.get());
       }
       assertThat(codes).containsExactlyInAnyOrder(201, 409);
+      assertThat(bookingCount()).isEqualTo(1);
+    } finally {
+      pool.shutdownNow();
+    }
+  }
+
+  @Test
+  void manyConcurrentRoundsNeverCreateOverlappingBookings() throws Exception {
+    // Одиночная гонка двух запросов без блокировки проходит случайно; повторы и 8 потоков на
+    // раунд делают отсутствие блокировки заметным
+    int threads = 8;
+    ExecutorService pool = Executors.newFixedThreadPool(threads);
+    try {
+      for (int round = 0; round < 15; round++) {
+        jdbc.update("DELETE FROM bookings");
+        String start = "2026-11-23T%02d:%02d:00+05:00".formatted(9 + round / 2, round % 2 * 30);
+        CyclicBarrier barrier = new CyclicBarrier(threads);
+        List<Future<Integer>> results = new ArrayList<>();
+        for (int i = 0; i < threads; i++) {
+          String type = i % 2 == 0 ? "intro-call" : "consultation";
+          results.add(
+              pool.submit(
+                  () -> {
+                    barrier.await();
+                    return book(type, start, "Гость", "g@example.com").statusCode();
+                  }));
+        }
+        List<Integer> codes = new ArrayList<>();
+        for (Future<Integer> f : results) {
+          codes.add(f.get());
+        }
+        assertThat(codes.stream().filter(c -> c == 201).count())
+            .as("раунд %d, старт %s, коды %s", round, start, codes)
+            .isEqualTo(1);
+        assertThat(codes.stream().filter(c -> c == 409).count())
+            .as("раунд %d, коды %s", round, codes)
+            .isEqualTo(threads - 1);
+        assertThat(bookingCount()).as("раунд %d", round).isEqualTo(1);
+      }
+    } finally {
+      pool.shutdownNow();
+    }
+  }
+
+  @Test
+  void bookingWaitsForCalendarLockHeldByAnotherTransaction() throws Exception {
+    // Детерминированная проверка: пока чужая транзакция держит calendar_lock, запись обязана
+    // ждать. Без SELECT ... FOR UPDATE запрос завершился бы сразу
+    ExecutorService pool = Executors.newSingleThreadExecutor();
+    try (Connection holder = jdbc.getDataSource().getConnection()) {
+      holder.setAutoCommit(false);
+      try (Statement st = holder.createStatement()) {
+        st.execute("SELECT id FROM calendar_lock WHERE id = 1 FOR UPDATE");
+      }
+      Future<Integer> pending =
+          pool.submit(
+              () ->
+                  book("intro-call", "2026-11-23T10:00:00+05:00", "Анна", "a@example.com")
+                      .statusCode());
+      assertThatThrownBy(() -> pending.get(1500, TimeUnit.MILLISECONDS))
+          .as("запись должна ждать освобождения calendar_lock")
+          .isInstanceOf(TimeoutException.class);
+      assertThat(bookingCount()).isZero();
+      holder.rollback();
+      assertThat(pending.get(10, TimeUnit.SECONDS)).isEqualTo(201);
       assertThat(bookingCount()).isEqualTo(1);
     } finally {
       pool.shutdownNow();
