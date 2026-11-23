@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
-import { eventTypesApi, slotsApi } from '../api/client'
-import type { EventType, Slot } from '../api/generated'
+import { useEffect, useState, type FormEvent } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { bookingsApi, eventTypesApi, slotsApi } from '../api/client'
+import { ResponseError, type ApiError, type EventType, type Slot } from '../api/generated'
+import { OWNER_TIMEZONE, dayFormat, timeFormat } from './time'
 
 type State =
   | { status: 'loading' }
@@ -16,53 +17,109 @@ function formatDuration(minutes: number): string {
   return `${hours} ч ${rest} мин`
 }
 
-// Часовой пояс владельца (ADR 0003): время всегда показываем в нём
-const OWNER_TIMEZONE = 'Asia/Almaty'
-
-const dayFormat = new Intl.DateTimeFormat('ru-RU', {
-  timeZone: OWNER_TIMEZONE,
-  weekday: 'long',
-  day: 'numeric',
-  month: 'long',
-})
-const timeFormat = new Intl.DateTimeFormat('ru-RU', {
-  timeZone: OWNER_TIMEZONE,
-  hour: '2-digit',
-  minute: '2-digit',
-})
+type Day = { label: string; slots: Slot[] }
 
 type SlotsState =
   | { status: 'idle' }
   | { status: 'loading' }
   | { status: 'error' }
-  | { status: 'ready'; days: { label: string; times: string[] }[] }
+  | { status: 'ready'; days: Day[] }
 
-function groupByDay(slots: Slot[]): { label: string; times: string[] }[] {
-  const days: { label: string; times: string[] }[] = []
+function groupByDay(slots: Slot[]): Day[] {
+  const days: Day[] = []
   for (const slot of slots) {
     const label = dayFormat.format(slot.start)
     let day = days[days.length - 1]
     if (!day || day.label !== label) {
-      day = { label, times: [] }
+      day = { label, slots: [] }
       days.push(day)
     }
-    day.times.push(timeFormat.format(slot.start))
+    day.slots.push(slot)
   }
   return days
 }
 
+const emptyGuest = { guestName: '', guestEmail: '' }
+
 export function BookingPage() {
+  const navigate = useNavigate()
   const [state, setState] = useState<State>({ status: 'loading' })
   const [slots, setSlots] = useState<SlotsState>({ status: 'idle' })
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [selectedSlot, setSelectedSlot] = useState<Slot | null>(null)
+  const [guest, setGuest] = useState(emptyGuest)
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
+  const [formError, setFormError] = useState<string | null>(null)
+  const [submitting, setSubmitting] = useState(false)
 
   function selectEventType(id: string) {
     setSelectedId(id)
+    setSelectedSlot(null)
+    setFieldErrors({})
+    setFormError(null)
     setSlots({ status: 'loading' })
     slotsApi
       .listSlots({ id })
       .then((list) => setSlots({ status: 'ready', days: groupByDay(list) }))
       .catch(() => setSlots({ status: 'error' }))
+  }
+
+  function selectSlot(slot: Slot) {
+    setSelectedSlot(slot)
+    setFieldErrors({})
+    setFormError(null)
+  }
+
+  async function submit(event: FormEvent) {
+    event.preventDefault()
+    if (!selectedId || !selectedSlot) return
+    setSubmitting(true)
+    setFieldErrors({})
+    setFormError(null)
+    try {
+      const booking = await bookingsApi.createBooking({
+        createBookingRequest: {
+          eventTypeId: selectedId,
+          start: selectedSlot.start,
+          guestName: guest.guestName,
+          guestEmail: guest.guestEmail,
+        },
+      })
+      navigate('/book/confirmation', { state: { booking } })
+    } catch (error) {
+      if (error instanceof ResponseError) {
+        const body = (await error.response.json().catch(() => null)) as ApiError | null
+        if (error.response.status === 400 && body?.fieldErrors) {
+          setFieldErrors(body.fieldErrors)
+          return
+        }
+        setFormError(body?.message ?? 'Не удалось записаться')
+      } else {
+        setFormError('Не удалось записаться')
+      }
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  function guestField(name: keyof typeof emptyGuest, label: string, type: string) {
+    const error = fieldErrors[name]
+    const errorId = `${name}-error`
+    return (
+      <p>
+        <label>
+          {label}
+          <input
+            type={type}
+            value={guest[name]}
+            onChange={(e) => setGuest((current) => ({ ...current, [name]: e.target.value }))}
+            aria-invalid={error ? true : undefined}
+            aria-describedby={error ? errorId : undefined}
+          />
+        </label>
+        {error && <span id={errorId}>{error}</span>}
+      </p>
+    )
   }
 
   useEffect(() => {
@@ -79,6 +136,11 @@ export function BookingPage() {
       cancelled = true
     }
   }, [])
+
+  const selectedEventType =
+    state.status === 'ready' ? state.eventTypes.find((e) => e.id === selectedId) : undefined
+  // Ошибка старта не относится к полям ввода: показываем её у формы
+  const startError = fieldErrors.start
 
   return (
     <main>
@@ -121,13 +183,36 @@ export function BookingPage() {
               <div key={day.label} role="group" aria-label={day.label}>
                 <h3>{day.label}</h3>
                 <ul>
-                  {day.times.map((time) => (
-                    <li key={time}>{time}</li>
+                  {day.slots.map((slot) => (
+                    <li key={slot.start.toISOString()}>
+                      <button
+                        type="button"
+                        aria-pressed={selectedSlot?.start.getTime() === slot.start.getTime()}
+                        onClick={() => selectSlot(slot)}
+                      >
+                        {timeFormat.format(slot.start)}
+                      </button>
+                    </li>
                   ))}
                 </ul>
               </div>
             ))}
         </section>
+      )}
+      {selectedSlot && selectedEventType && (
+        <form aria-label="Данные гостя" onSubmit={submit} noValidate>
+          <h2>Ваши данные</h2>
+          <p>
+            {selectedEventType.title}: {dayFormat.format(selectedSlot.start)},{' '}
+            {timeFormat.format(selectedSlot.start)}
+          </p>
+          {guestField('guestName', 'Имя', 'text')}
+          {guestField('guestEmail', 'Email', 'email')}
+          {(startError || formError) && <p role="alert">{startError ?? formError}</p>}
+          <button type="submit" disabled={submitting}>
+            Записаться
+          </button>
+        </form>
       )}
       <Link to="/">На главную</Link>
     </main>

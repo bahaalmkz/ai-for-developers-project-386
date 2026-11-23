@@ -1,0 +1,37 @@
+import { Link, useLocation } from 'react-router-dom'
+import type { Booking } from '../api/generated'
+import { OWNER_TIMEZONE, dayFormat, timeFormat } from './time'
+
+// Данные встречи приходят только через состояние перехода и не сохраняются при перезагрузке
+export function ConfirmationPage() {
+  const location = useLocation()
+  const booking = (location.state as { booking?: Booking } | null)?.booking
+
+  if (!booking) {
+    return (
+      <main>
+        <h1>Подтверждение</h1>
+        <p>Данных о встрече нет.</p>
+        <Link to="/book">К записи</Link>
+      </main>
+    )
+  }
+
+  return (
+    <main>
+      <h1>Запись подтверждена</h1>
+      <p>
+        <strong>{booking.eventType.title}</strong>
+      </p>
+      <p>
+        {dayFormat.format(booking.start)}, {timeFormat.format(booking.start)}–
+        {timeFormat.format(booking.end)}
+      </p>
+      <p>Время указано в часовом поясе владельца: {OWNER_TIMEZONE} (UTC+5).</p>
+      <p>
+        Гость: {booking.guestName}, {booking.guestEmail}
+      </p>
+      <Link to="/">На главную</Link>
+    </main>
+  )
+}
