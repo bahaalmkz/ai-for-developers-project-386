@@ -20,6 +20,15 @@
 - `backend/` — Java 21, Spring Boot. Серверные интерфейсы генерируются из `contract/openapi.yaml` при сборке. Реализуем их в контроллерах.
 - `frontend/` — React + Vite + TypeScript. Клиент API генерируется, руками не правим `src/api/generated`.
 
+### Генерируемые файлы (руками не правим)
+
+- `contract/openapi.yaml` — из `contract/main.tsp` командой `mise run contract`. Коммитится; CI после `mise run check` проверяет, что он совпадает с генерацией.
+- `frontend/src/api/generated/` — клиентский SDK (`typescript-fetch`), `mise run generate`. Не коммитится, CI генерирует его заново.
+- `backend/target/generated-sources/` — серверные интерфейсы и модели (`openapi-generator-maven-plugin`), создаются при сборке Maven. Не коммитятся.
+- `CHANGELOG.md` и `.release-please-manifest.json` — ведёт release-please.
+
+Меняется API — правим `contract/main.tsp`, перегенерируем, затем код обеих сторон. Фронтенд обращается к API только через сгенерированный клиент (`frontend/src/api/client.ts`).
+
 ## Правила
 
 - Коммиты по Conventional Commits: `feat:`, `fix:`, `chore:`, `docs:`, `test:`, `refactor:` и т. д. Проверяет хук commit-msg (commitlint, правила в `commitlint.config.mjs`). После клонирования один раз `npm ci` в корне, иначе хук не найдёт commitlint.
