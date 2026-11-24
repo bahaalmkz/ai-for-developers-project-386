@@ -31,3 +31,9 @@ jobs:
 
       - name: Run checks
         run: mise run check
+
+      # openapi.yaml коммитится: после генерации в mise run check он не должен отличаться от закоммиченного
+      - name: Check generated contract is committed
+        run: |
+          git diff --exit-code -- contract
+          test -z "$(git status --porcelain -- contract)"
