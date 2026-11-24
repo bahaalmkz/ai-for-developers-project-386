@@ -28,6 +28,8 @@ run = "npm ci && npx tsp compile ."
 description = "Сгенерировать клиентский SDK фронтенда из OpenAPI"
 depends = ["contract"]
 dir = "frontend"
+# openapi-generator-cli ищет openapitools.json по $PWD, а mise оставляет в нём корень репозитория
+env = { PWD = "{{config_root}}/frontend" }
 run = "npm ci && npm run generate:api"
 
 [tasks.lint]
