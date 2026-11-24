@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -25,7 +25,7 @@ function renderAt(path: string) {
 }
 
 describe('Главная страница', () => {
-  it('рассказывает о сервисе и показывает три шага', () => {
+  it('рассказывает о сервисе и показывает три возможности', () => {
     renderAt('/')
 
     expect(screen.getByRole('heading', { level: 1, name: 'Календарь звонков' })).toBeInTheDocument()
@@ -36,15 +36,24 @@ describe('Главная страница', () => {
   it('ведёт на страницу записи', () => {
     renderAt('/')
 
-    expect(screen.getByRole('link', { name: 'Записаться' })).toHaveAttribute('href', '/book')
+    const main = screen.getByRole('main')
+    expect(within(main).getByRole('link', { name: 'Записаться' })).toHaveAttribute('href', '/book')
+  })
+
+  it('в шапке ведёт на запись и в раздел владельца', () => {
+    renderAt('/')
+
+    const nav = screen.getByRole('navigation', { name: 'Разделы' })
+    expect(within(nav).getByRole('link', { name: 'Записаться' })).toHaveAttribute('href', '/book')
+    expect(within(nav).getByRole('link', { name: 'Владелец' })).toHaveAttribute('href', '/owner')
   })
 
   it('открывает страницу записи по клику на «Записаться»', async () => {
     renderAt('/')
 
-    await userEvent.click(screen.getByRole('link', { name: 'Записаться' }))
+    await userEvent.click(within(screen.getByRole('main')).getByRole('link', { name: 'Записаться' }))
 
-    expect(screen.getByRole('heading', { level: 1, name: 'Запись' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 1, name: 'Выберите тип встречи' })).toBeInTheDocument()
   })
 
   it('не показывает статус сервера', () => {
@@ -58,7 +67,7 @@ describe('Страница записи', () => {
   it('открывается по адресу /book и возвращает на главную', async () => {
     renderAt('/book')
 
-    expect(screen.getByRole('heading', { level: 1, name: 'Запись' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 1, name: 'Выберите тип встречи' })).toBeInTheDocument()
 
     await userEvent.click(screen.getByRole('link', { name: 'На главную' }))
 

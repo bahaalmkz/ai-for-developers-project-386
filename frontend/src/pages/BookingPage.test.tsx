@@ -83,7 +83,7 @@ describe('Страница записи: свободные слоты', () => {
     return fetchMock
   }
 
-  it('после выбора типа встречи показывает слоты по дням и подписывает пояс', async () => {
+  it('после выбора типа встречи показывает календарь, время первого дня и подписывает пояс', async () => {
     const fetchMock = stubRoutes({
       'intro-call': [
         { start: '2026-11-23T09:00:00+05:00', end: '2026-11-23T09:30:00+05:00' },
@@ -95,15 +95,65 @@ describe('Страница записи: свободные слоты', () => {
 
     await userEvent.click(await screen.findByRole('button', { name: 'Выбрать Знакомство' }))
 
-    const days = await screen.findAllByRole('group')
-    expect(days).toHaveLength(2)
-    expect(within(days[0]).getByText('09:00')).toBeInTheDocument()
-    expect(within(days[0]).getByText('09:30')).toBeInTheDocument()
-    expect(within(days[1]).getByText('09:00')).toBeInTheDocument()
-    expect(days[0]).toHaveAccessibleName(/23 ноября/)
-    expect(days[1]).toHaveAccessibleName(/24 ноября/)
+    // Сразу открыт первый день со свободным временем
+    const firstDay = await screen.findByRole('group', { name: /23 ноября/ })
+    expect(within(firstDay).getByRole('button', { name: '09:00' })).toHaveTextContent('09:00 – 09:30')
+    expect(within(firstDay).getByRole('button', { name: '09:30' })).toBeInTheDocument()
+    // В календаре у дня видно число свободных слотов
+    const calendar = screen.getByRole('group', { name: 'Календарь' })
+    expect(within(calendar).getByRole('button', { name: /23 ноября, свободно: 2/ })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
     expect(screen.getByText(/Asia\/Almaty/)).toBeInTheDocument()
     expect(fetchMock).toHaveBeenCalledWith('/api/event-types/intro-call/slots', expect.anything())
+  })
+
+  it('по клику на день календаря показывает время этого дня', async () => {
+    stubRoutes({
+      'intro-call': [
+        { start: '2026-11-23T09:00:00+05:00', end: '2026-11-23T09:30:00+05:00' },
+        { start: '2026-11-24T11:00:00+05:00', end: '2026-11-24T11:30:00+05:00' },
+      ],
+    })
+    renderPage()
+    await userEvent.click(await screen.findByRole('button', { name: 'Выбрать Знакомство' }))
+    const calendar = await screen.findByRole('group', { name: 'Календарь' })
+
+    await userEvent.click(within(calendar).getByRole('button', { name: /24 ноября, свободно: 1/ }))
+
+    const day = screen.getByRole('group', { name: /24 ноября/ })
+    expect(within(day).getByRole('button', { name: '11:00' })).toBeInTheDocument()
+    expect(screen.queryByRole('group', { name: /23 ноября/ })).not.toBeInTheDocument()
+  })
+
+  it('«Продолжить» доступно только после выбора времени, выбор виден в сводке', async () => {
+    stubRoutes({
+      'intro-call': [{ start: '2026-11-23T09:00:00+05:00', end: '2026-11-23T09:30:00+05:00' }],
+    })
+    renderPage()
+    await userEvent.click(await screen.findByRole('button', { name: 'Выбрать Знакомство' }))
+    const day = await screen.findByRole('group', { name: /23 ноября/ })
+
+    expect(screen.getByRole('button', { name: 'Продолжить' })).toBeDisabled()
+    expect(screen.getByText('Время не выбрано')).toBeInTheDocument()
+
+    await userEvent.click(within(day).getByRole('button', { name: '09:00' }))
+
+    expect(screen.getByRole('button', { name: 'Продолжить' })).toBeEnabled()
+    expect(screen.getByText('09:00 – 09:30', { selector: '.info-box__value' })).toBeInTheDocument()
+  })
+
+  it('«Назад» возвращает к выбору типа встречи', async () => {
+    stubRoutes({ 'intro-call': [] })
+    renderPage()
+    await userEvent.click(await screen.findByRole('button', { name: 'Выбрать Знакомство' }))
+    await screen.findByText('Свободных слотов нет.')
+
+    await userEvent.click(screen.getByRole('button', { name: 'Назад' }))
+
+    expect(screen.getByRole('heading', { level: 1, name: 'Выберите тип встречи' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Выбрать Консультация' })).toBeInTheDocument()
   })
 
   it('показывает пустое состояние, если свободных слотов нет', async () => {
