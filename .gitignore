@@ -6,6 +6,9 @@ backend/target/
 data/
 frontend/src/api/generated/
 
+# Рабочие копии агентов Claude Code
+.claude/worktrees/
+
 # IDE и система
 .idea/
 *.iml
