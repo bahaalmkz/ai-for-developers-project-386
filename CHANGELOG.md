@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.2.0](https://github.com/bahaalmkz/ai-for-developers-project-386/compare/v0.1.0...v0.2.0) (2026-11-24)
+
+
+### Features
+
+* docker-образ и подготовка деплоя на Render ([e3c523c](https://github.com/bahaalmkz/ai-for-developers-project-386/commit/e3c523cb776e2ac57a4a0a01f607bbd43cd6a96e))
+* docker-образ и подготовка деплоя на Render ([3ee5a94](https://github.com/bahaalmkz/ai-for-developers-project-386/commit/3ee5a945f37f3730395e462aa0be5f67fc4f776e))
+* оформление страниц по макетам из описания проекта ([f6efdab](https://github.com/bahaalmkz/ai-for-developers-project-386/commit/f6efdabe9c3919e5ec7cd4bb1d3f68b37c1db546))
+* оформление страниц по макетам из описания проекта ([982bed1](https://github.com/bahaalmkz/ai-for-developers-project-386/commit/982bed1c02771ae588f652e63f0d3dc1e30c4eda))
+
+
+### Bug Fixes
+
+* убрать артефакты генерации из рабочей копии ([1e2fbf2](https://github.com/bahaalmkz/ai-for-developers-project-386/commit/1e2fbf2ad06dc783c4b8381d46007254ecd62c87))
+* убрать артефакты генерации из рабочей копии ([da3f2e8](https://github.com/bahaalmkz/ai-for-developers-project-386/commit/da3f2e8429df35386cc6d575abfc8dee705aae38))
+
 ## 0.1.0 (2026-11-24)
 
 
