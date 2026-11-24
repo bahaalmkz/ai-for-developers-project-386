@@ -54,7 +54,7 @@ jobs:
       - name: Run container on PORT
         run: |
           docker run -d --name calendar -e PORT=10000 -p 10000:10000 calendar
-          for i in $(seq 1 60); do
+          for _ in $(seq 1 60); do
             curl -sf http://localhost:10000/api/health && exit 0
             sleep 2
           done
