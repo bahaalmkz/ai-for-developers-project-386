@@ -37,3 +37,33 @@ jobs:
         run: |
           git diff --exit-code -- contract
           test -z "$(git status --porcelain -- contract)"
+
+  # Образ из Dockerfile собирается, стартует по PORT и проходит сквозной сценарий (scripts/smoke.sh)
+  docker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      # actions/checkout v4, закреплено по SHA
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      - name: Build image
+        run: docker build -t calendar .
+
+      - name: Run container on PORT
+        run: |
+          docker run -d --name calendar -e PORT=10000 -p 10000:10000 calendar
+          for i in $(seq 1 60); do
+            curl -sf http://localhost:10000/api/health && exit 0
+            sleep 2
+          done
+          docker logs calendar
+          exit 1
+
+      - name: Smoke scenario
+        run: bash scripts/smoke.sh http://localhost:10000
+
+      - name: Container logs
+        if: failure()
+        run: docker logs calendar

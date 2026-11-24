@@ -22,6 +22,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Два способа запуска проверок.** `scripts/check.ps1` и `mise run check` повторяют одну и ту же последовательность, но `check.ps1` вызывает `./mvnw`, а mise — `mvn` из своего набора. Версии Maven держатся в `mise.toml` (3.10.1) и в `backend/.mvn/wrapper/maven-wrapper.properties`; при обновлении меняйте оба места.
 
+**Docker и деплой.** `Dockerfile` собирает фронтенд (с генерацией SDK) и кладёт `dist` в `classpath:/static/` бэкенда, поэтому в образе один процесс на одном порту (`server.port=${PORT:8080}`). Статику и переход на `index.html` для маршрутов React Router делает `web/SpaConfig` (стандартная раздача Spring выключена); `/api/**` и пути с расширением файла остаются 404. В тестах вместо сборки лежит `src/test/resources/static/index.html`. Деплой — Render (`render.yaml`, MCP в `.mcp.json`).
+
 **Файлы, которые не трогаем вручную:** `.github/workflows/hexlet-check.yml` (его генерирует Хекслет), `frontend/src/api/generated`, `backend/target`, `contract/openapi.yaml` (только через `mise run contract`).
 
 **Данные.** Бэкенд хранит данные во встроенной H2 (файл `backend/data/calendar`, в `.gitignore`). Схема — `schema.sql`; демо-данные (два типа встречи) — `demo-data.sql`, подключаются только профилем `dev` (`mise daemons start backend` запускает с ним). Ошибки API — единый формат `{code, message}` (`error/ApiExceptionHandler`). Тесты бэкенда используют БД в памяти (`src/test/resources/application.properties`).

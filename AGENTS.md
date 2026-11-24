@@ -10,6 +10,8 @@
 - Один тест бэкенда: `cd backend && mvn -Dtest=SmokeTest test`. Тесты фронтенда: `cd frontend && npm test` (Vitest).
 - `mise run e2e` — браузерный сценарий Playwright (`e2e/`, версия закреплена в `e2e/package.json`). Сам поднимает бэкенд на порту 18080 (чистая БД в памяти, без профиля dev) и фронтенд на 15173, поэтому демоны для него не нужны. Хромиум ставится автоматически. Входит в `mise run check`, `scripts/check.ps1` и CI.
 - `mise daemons start|status|logs|stop` — backend (8080) и frontend (5173) в фоне через pitchfork.
+- `docker build -t calendar .` и `docker run --rm -e PORT=8080 -p 8080:8080 calendar` — образ всего приложения (`Dockerfile`). `bash scripts/smoke.sh <адрес>` — сквозная проверка запущенного приложения (локальный контейнер или публичная ссылка). В CI это отдельная задача `docker`, в `mise run check` не входит.
+- Деплой: Render, `render.yaml`. MCP-сервер Render описан в `.mcp.json`, ключ только в переменной окружения `RENDER_API_KEY`, в файлы его не записываем.
 - Git-хуки (hk, `hk.pkl`): pre-commit запускает `mise run lint`, pre-push запускает `mise run check`.
 
 ## Устройство
