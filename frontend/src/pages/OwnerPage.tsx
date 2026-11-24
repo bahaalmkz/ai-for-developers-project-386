@@ -97,7 +97,7 @@ export function OwnerPage() {
     const error = fieldErrors[name]
     const errorId = `${name}-error`
     return (
-      <p>
+      <div className="field">
         <label>
           {label}
           <input
@@ -108,65 +108,99 @@ export function OwnerPage() {
             aria-describedby={error ? errorId : undefined}
           />
         </label>
-        {error && <span id={errorId}>{error}</span>}
-      </p>
+        {error && (
+          <span id={errorId} className="field-error">
+            {error}
+          </span>
+        )}
+      </div>
     )
   }
 
   return (
-    <main>
-      <h1>Раздел владельца</h1>
-      <h2>Новый тип встречи</h2>
-      <form onSubmit={submit} noValidate>
-        {field('id', 'Идентификатор')}
-        {field('title', 'Название')}
-        {field('description', 'Описание')}
-        {field('durationMinutes', 'Длительность, мин', 'number')}
-        {formError && <p role="alert">{formError}</p>}
-        <button type="submit" disabled={submitting}>
-          Создать
-        </button>
-      </form>
-
-      <h2>Созданные типы встреч</h2>
-      {list.status === 'loading' && <p>Загрузка…</p>}
-      {list.status === 'error' && (
-        <p role="alert">Не удалось загрузить типы встреч. Попробуйте обновить страницу.</p>
-      )}
-      {list.status === 'ready' && list.eventTypes.length === 0 && <p>Типов встреч пока нет.</p>}
-      {list.status === 'ready' && list.eventTypes.length > 0 && (
-        <ul aria-label="Типы встреч">
-          {list.eventTypes.map((eventType) => (
-            <li key={eventType.id}>
-              <strong>{eventType.title}</strong> ({eventType.id}), {eventType.durationMinutes} мин
-              {eventType.description && <p>{eventType.description}</p>}
-            </li>
-          ))}
-        </ul>
-      )}
-
-      <h2>Предстоящие встречи</h2>
-      {bookings.status === 'loading' && <p>Загрузка…</p>}
-      {bookings.status === 'error' && (
-        <p role="alert">Не удалось загрузить встречи. Попробуйте обновить страницу.</p>
-      )}
-      {bookings.status === 'ready' && bookings.bookings.length === 0 && (
-        <p>Предстоящих встреч пока нет.</p>
-      )}
-      {bookings.status === 'ready' && bookings.bookings.length > 0 && (
-        <ul aria-label="Предстоящие встречи">
-          {bookings.bookings.map((booking) => (
-            <li key={booking.id}>
-              <strong>{booking.eventType.title}</strong>: {dayFormat.format(booking.start)},{' '}
-              {timeFormat.format(booking.start)}–{timeFormat.format(booking.end)}
-              <p>
-                {booking.guestName}, {booking.guestEmail}
+    <main className="page">
+      <header className="page-header">
+        <h1>Раздел владельца</h1>
+        <p className="lead">Типы встреч для записи и предстоящие встречи всех типов.</p>
+      </header>
+      <div className="owner-grid">
+        <section className="card" aria-labelledby="new-event-type">
+          <h2 id="new-event-type">Новый тип встречи</h2>
+          <form onSubmit={submit} noValidate className="form">
+            {field('id', 'Идентификатор')}
+            {field('title', 'Название')}
+            {field('description', 'Описание')}
+            {field('durationMinutes', 'Длительность, мин', 'number')}
+            {formError && (
+              <p role="alert" className="alert">
+                {formError}
               </p>
-            </li>
-          ))}
-        </ul>
-      )}
-      <Link to="/">На главную</Link>
+            )}
+            <button type="submit" className="button" disabled={submitting}>
+              Создать
+            </button>
+          </form>
+        </section>
+
+        <div className="owner-lists">
+          <section className="card" aria-labelledby="upcoming-bookings">
+            <h2 id="upcoming-bookings">Предстоящие встречи</h2>
+            {bookings.status === 'loading' && <p className="muted">Загрузка…</p>}
+            {bookings.status === 'error' && (
+              <p role="alert" className="alert">
+                Не удалось загрузить встречи. Попробуйте обновить страницу.
+              </p>
+            )}
+            {bookings.status === 'ready' && bookings.bookings.length === 0 && (
+              <p className="muted">Предстоящих встреч пока нет.</p>
+            )}
+            {bookings.status === 'ready' && bookings.bookings.length > 0 && (
+              <ul aria-label="Предстоящие встречи" className="item-list">
+                {bookings.bookings.map((booking) => (
+                  <li key={booking.id}>
+                    <span>
+                      <strong>{booking.eventType.title}</strong>: {dayFormat.format(booking.start)},{' '}
+                      {timeFormat.format(booking.start)}–{timeFormat.format(booking.end)}
+                    </span>
+                    <p className="muted">
+                      {booking.guestName}, {booking.guestEmail}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+
+          <section className="card" aria-labelledby="event-types">
+            <h2 id="event-types">Созданные типы встреч</h2>
+            {list.status === 'loading' && <p className="muted">Загрузка…</p>}
+            {list.status === 'error' && (
+              <p role="alert" className="alert">
+                Не удалось загрузить типы встреч. Попробуйте обновить страницу.
+              </p>
+            )}
+            {list.status === 'ready' && list.eventTypes.length === 0 && (
+              <p className="muted">Типов встреч пока нет.</p>
+            )}
+            {list.status === 'ready' && list.eventTypes.length > 0 && (
+              <ul aria-label="Типы встреч" className="item-list">
+                {list.eventTypes.map((eventType) => (
+                  <li key={eventType.id}>
+                    <span>
+                      <strong>{eventType.title}</strong> ({eventType.id}), {eventType.durationMinutes}{' '}
+                      мин
+                    </span>
+                    {eventType.description && <p className="muted">{eventType.description}</p>}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        </div>
+      </div>
+      <Link to="/" className="back-link">
+        На главную
+      </Link>
     </main>
   )
 }

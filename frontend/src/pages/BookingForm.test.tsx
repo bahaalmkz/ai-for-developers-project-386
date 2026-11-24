@@ -45,6 +45,7 @@ async function openFormForSecondSlot() {
   await user.click(await screen.findByRole('button', { name: 'Выбрать Знакомство' }))
   const day = await screen.findByRole('group', { name: /23 ноября/ })
   await user.click(within(day).getByRole('button', { name: '09:30' }))
+  await user.click(screen.getByRole('button', { name: 'Продолжить' }))
   return user
 }
 
@@ -65,6 +66,7 @@ describe('Форма гостя', () => {
     await screen.findByRole('group', { name: /23 ноября/ })
 
     expect(screen.queryByLabelText('Имя')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Продолжить' })).toBeDisabled()
   })
 
   it('после выбора слота показывает форму и отправляет запись с выбранным слотом', async () => {
@@ -216,7 +218,9 @@ describe('Форма гостя', () => {
       </MemoryRouter>,
     )
     const user = userEvent.setup()
+    // Слоты первого типа ещё не пришли, а гость уже вернулся и выбрал второй тип
     await user.click(await screen.findByRole('button', { name: 'Выбрать Первый' }))
+    await user.click(screen.getByRole('button', { name: 'Назад' }))
     await user.click(screen.getByRole('button', { name: 'Выбрать Второй' }))
     expect(await screen.findByRole('button', { name: '11:00' })).toBeInTheDocument()
 
@@ -227,7 +231,7 @@ describe('Форма гостя', () => {
     expect(screen.getByRole('button', { name: '11:00' })).toBeInTheDocument()
   })
 
-  it('на время отправки блокирует смену типа, слота и повторную отправку', async () => {
+  it('на время отправки блокирует возврат к выбору времени и повторную отправку', async () => {
     let resolveBooking: (response: Response) => void = () => {}
     const pending = new Promise<Response>((resolve) => {
       resolveBooking = resolve
@@ -238,12 +242,22 @@ describe('Форма гостя', () => {
     await user.click(screen.getByRole('button', { name: 'Записаться' }))
 
     expect(screen.getByRole('button', { name: 'Записаться' })).toBeDisabled()
-    expect(screen.getByRole('button', { name: 'Выбрать Знакомство' })).toBeDisabled()
-    expect(screen.getByRole('button', { name: '09:00' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Назад' })).toBeDisabled()
     expect(bookingCalls(fetchMock)).toHaveLength(1)
 
     resolveBooking(json({}, 500))
     expect(await screen.findByRole('alert')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Выбрать Знакомство' })).toBeEnabled()
+    expect(screen.getByRole('button', { name: 'Назад' })).toBeEnabled()
+  })
+
+  it('«Назад» в форме возвращает к выбору времени с сохранённым выбором', async () => {
+    stubApi(() => json({}, 500))
+    const user = await openFormForSecondSlot()
+
+    await user.click(screen.getByRole('button', { name: 'Назад' }))
+
+    const day = await screen.findByRole('group', { name: /23 ноября/ })
+    expect(within(day).getByRole('button', { name: '09:30' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.queryByLabelText('Имя')).not.toBeInTheDocument()
   })
 })
